@@ -1,0 +1,9 @@
+{
+	"ignore": [
+		"./data/*",
+		"./logs/*",
+		"./node_modules/*",
+		"./source/*",
+		"./types/*"
+	]
+}
