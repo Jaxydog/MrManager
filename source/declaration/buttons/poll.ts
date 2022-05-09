@@ -39,7 +39,7 @@ export const modalButton = new Action<ButtonInteraction>("button/poll-modal").in
 })
 export const optionButton = new Action<ButtonInteraction>("button/poll-option").invokes(async (interact) => {
 	const [guildId, userId] = interact.message.embeds[0]!.footer!.text.split("-") as [string, string]
-	const path = `poll/${guildId}/${userId}`
+	const path = `poll/${guildId}_${userId}`
 	const data = (await get<PollCommand.Data>(path, true))!
 
 	if (interact.user.id === userId) {

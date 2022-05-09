@@ -151,6 +151,7 @@ export async function subList(interact: CommandInteraction, embed: Embed) {
 	const path = `poll/${interact.guild!.id}_${interact.user.id}`
 	if (!(await has(path, true)).result) return embed.title("No active poll!")
 	const data = (await get<Data>(path, true))!
+	if (data.metadata.message) return getResults(data)
 	const description = data.options.map((o) => `${o.emoji} ${o.name}`).join("\n")
 	return embed.title(data.config.title).description(description !== "" ? description : "*No options added*")
 }
@@ -169,7 +170,7 @@ export async function subPost(interact: CommandInteraction, client: Client, embe
 	data.metadata.channel = message.channel!.id
 	data.metadata.message = message.id
 
-	timeout(client, message, data)
+	if (data.config.timeout !== -1) timeout(client, message, data)
 
 	const { result } = await set(path, data, true)
 	return embed.title(result ? "Posted poll!" : "Error posting poll!")
@@ -227,28 +228,7 @@ export function getFormModal(component: Component) {
 	component.add(modalButton)
 	return component
 }
-export async function closePoll(client: Client, data: Data) {
-	const path = `poll/${data.metadata.guild}_${data.metadata.user}`
-	const guild = await client.guilds.fetch(data.metadata.guild)
-	const channel = (await guild.channels.fetch(data.metadata.channel)) as TextChannel
-	const message = await channel.messages.fetch(data.metadata.message)
-
-	message.embeds[0]!.title += " (CLOSED)"
-	data.active = false
-
-	const embeds = message.embeds
-	const components = message.components.map((row) => {
-		row.components.map((component) => {
-			component.setDisabled(true)
-			return component
-		})
-		return row
-	})
-
-	await message.edit({ embeds, components })
-	await del(path, true)
-}
-export async function sendResults(message: Message, data: Data) {
+export function getResults(data: Data) {
 	const embed = new Embed().title(`Results for poll "${data.config.title}"`)
 
 	if (data.config.type === "choice") {
@@ -281,6 +261,32 @@ export async function sendResults(message: Message, data: Data) {
 			})
 		}
 	}
+
+	return embed
+}
+export async function closePoll(client: Client, data: Data) {
+	const path = `poll/${data.metadata.guild}_${data.metadata.user}`
+	const guild = await client.guilds.fetch(data.metadata.guild)
+	const channel = (await guild.channels.fetch(data.metadata.channel)) as TextChannel
+	const message = await channel.messages.fetch(data.metadata.message)
+
+	message.embeds[0]!.title += " (CLOSED)"
+	data.active = false
+
+	const embeds = message.embeds
+	const components = message.components.map((row) => {
+		row.components.map((component) => {
+			component.setDisabled(true)
+			return component
+		})
+		return row
+	})
+
+	await message.edit({ embeds, components })
+	await del(path, true)
+}
+export async function sendResults(message: Message, data: Data) {
+	const embed = getResults(data)
 
 	if (data.config.output === "channel") {
 		await message.reply({ embeds: [embed.build()] })
