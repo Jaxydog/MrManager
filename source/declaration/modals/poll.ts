@@ -5,7 +5,7 @@ import { PollCommand } from "../declaration"
 
 export const modalModal = new Action<ModalSubmitInteraction>("modal/poll-modal").invokes(async (interact) => {
 	const [, guild, user] = interact.customId.split(";") as [string, string, string]
-	const path = `poll/${guild}/${user}`
+	const path = `poll/${guild}_${user}`
 	const data = await get<PollCommand.Data>(path, true)
 
 	if (!data) return

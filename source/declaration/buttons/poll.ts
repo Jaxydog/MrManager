@@ -7,7 +7,7 @@ import { PollCommand } from "../declaration"
 
 export const modalButton = new Action<ButtonInteraction>("button/poll-modal").invokes(async (interact, client) => {
 	const [guildId, userId] = interact.message.embeds[0]!.footer!.text.split("-") as [string, string]
-	const path = `poll/${guildId}/${userId}`
+	const path = `poll/${guildId}_${userId}`
 	const data = (await get<PollCommand.Data>(path, true))!
 
 	if (interact.user.id === userId) {
@@ -16,7 +16,7 @@ export const modalButton = new Action<ButtonInteraction>("button/poll-modal").in
 			ephemeral: true,
 		})
 	}
-	if (data?.responses.some((r) => r.user === interact.user.id)) {
+	if (data.responses.some((r) => r.user === interact.user.id)) {
 		return await interact.reply({
 			embeds: [new Embed().title("You've already submitted a response!").build()],
 			ephemeral: true,

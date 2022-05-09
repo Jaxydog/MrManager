@@ -102,13 +102,11 @@ export async function subNew(interact: CommandInteraction, embed: Embed) {
 }
 export async function subDiscard(interact: CommandInteraction, embed: Embed) {
 	const path = `poll/${interact.guild!.id}_${interact.user.id}`
-	const archive = `poll/archive/${interact.guild!.id}_${interact.user.id}`
 	const data = (await get<Data>(path, true))!
 
 	if (data.metadata.message) return embed.title("You cannot discard a posted poll!")
 
 	await del(path, true)
-	if (data) await set(archive, data, true)
 	return embed.title("Discarded poll!")
 }
 export async function subAdd(interact: CommandInteraction, embed: Embed) {
@@ -159,6 +157,7 @@ export async function subPost(interact: CommandInteraction, client: Client, embe
 	const path = `poll/${interact.guild!.id}_${interact.user.id}`
 	if (!(await has(path, true)).result) return embed.title("No active poll!")
 	const data = (await get<Data>(path, true))!
+	if (data.options.length === 0) return embed.title("No poll options!")
 	const formEmbed = getFormEmbed(interact, data, new Embed())
 	const formComponent =
 		data.config.type === "choice" ? getFormChoice(data, new Component()) : getFormModal(new Component())
@@ -218,7 +217,6 @@ export function getFormModal(component: Component) {
 }
 export async function closePoll(client: Client, data: Data) {
 	const path = `poll/${data.metadata.guild}_${data.metadata.user}`
-	const archive = `poll/archive/${data.metadata.guild}/${data.metadata.user}`
 	const guild = await client.guilds.fetch(data.metadata.guild)
 	const channel = (await guild.channels.fetch(data.metadata.channel)) as TextChannel
 	const message = await channel.messages.fetch(data.metadata.message)
@@ -237,7 +235,6 @@ export async function closePoll(client: Client, data: Data) {
 
 	await message.edit({ embeds, components })
 	await del(path, true)
-	await set(archive, data, true)
 }
 export async function sendResults(message: Message, data: Data) {
 	const embed = new Embed().title(`Results for poll "${data.config.title}"`)
@@ -255,8 +252,16 @@ export async function sendResults(message: Message, data: Data) {
 		}
 	} else {
 		for (const option of data.options) {
-			const responses = data.responses.filter(({ content }) => content === option.name)
-			const content = responses.map((r) => `- ${r.content}`).join("\n")
+			const responses = data.responses.filter((response) => {
+				const responseData = JSON.parse(response.content) as Record<string, string>
+				return !!responseData[option.name]
+			})
+			const content = responses
+				.map((response) => {
+					const responseData = JSON.parse(response.content) as Record<string, string>
+					return `- ${responseData[option.name]!}`
+				})
+				.join("\n")
 
 			embed.fields({
 				name: option.name,
@@ -275,38 +280,33 @@ export async function sendResults(message: Message, data: Data) {
 }
 export async function timeout(client: Client, message: Message, data: Data) {
 	const { refreshInterval } = (await get<BotConfig>("bot/config", true))!
-	const interval = setInterval(
-		async (client, message, data) => {
-			if (!message) {
-				clearInterval(interval)
-				return
-			}
 
-			if (!(await get<Data>(`poll/${data.metadata.guild}_${data.metadata.user}`, true))?.active) {
-				clearInterval(interval)
-				return
-			}
+	const interval = setInterval(async () => {
+		if (!message) {
+			clearInterval(interval)
+			return
+		}
 
-			const ms = data.config.timeout * 60 * 1000
-			const diff = Date.now() - message.createdTimestamp
+		if (!(await get<Data>(`poll/${data.metadata.guild}_${data.metadata.user}`, true))?.active) {
+			clearInterval(interval)
+			return
+		}
 
-			if (diff >= ms) {
-				await closePoll(client, data)
-				await sendResults(message, data)
-				clearInterval(interval)
-			}
-		},
-		refreshInterval,
-		client,
-		message,
-		data
-	)
+		const ms = data.config.timeout * 60 * 1000
+		const diff = Date.now() - message.createdTimestamp
+
+		if (diff >= ms) {
+			await closePoll(client, data)
+			await sendResults(message, data)
+			clearInterval(interval)
+		}
+	}, refreshInterval)
 }
 export async function refresh(client: Client) {
 	await all<Data>(
 		"poll",
 		async (data) => {
-			if (!data.metadata.message) return
+			if (!data.metadata.message || !data.active) return
 			const guild = await client.guilds.fetch(data.metadata.guild)
 			const channel = (await guild.channels.fetch(data.metadata.channel)) as TextChannel
 			const message = await channel.messages.fetch(data.metadata.message)
