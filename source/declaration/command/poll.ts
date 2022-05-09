@@ -190,13 +190,21 @@ export function getFormEmbed(interact: CommandInteraction, data: Data, embed: Em
 		.author(interact.user.tag, interact.user.avatarURL() ?? undefined)
 		.title(data.config.title)
 		.description(`${data.config.description}`)
-		.fields({ name: `Type`, value: `${data.config.type.toUpperCase()}`, inline: true })
+		.fields({
+			name: `Type`,
+			value: `${data.config.type === "choice" ? "Multiple choice" : "Text input"}`,
+			inline: true,
+		})
 		.fields({
 			name: `Duration`,
 			value: `${data.config.timeout} minutes (${(data.config.timeout / 60).toFixed(1)} hours)`,
 			inline: true,
 		})
-		.fields({ name: `Outputs to`, value: `${data.config.output.toUpperCase()}`, inline: true })
+		.fields({
+			name: `Outputs to`,
+			value: `${data.config.output === "channel" ? "This channel" : "The poll author"}`,
+			inline: true,
+		})
 		.footer(`${data.metadata.guild}-${data.metadata.user}`)
 }
 export function getFormChoice(data: Data, component: Component) {

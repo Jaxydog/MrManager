@@ -117,25 +117,22 @@ export async function archive(channel: TextChannel) {
 export async function timeout(channel: TextChannel) {
 	const { refreshInterval } = (await get<BotConfig>("bot/config", true))!
 	const { timeout } = (await get<Config>(`mail/${channel.guild.id}`, true))!
-	const interval = setInterval(
-		async (channel) => {
-			if (!channel) {
-				clearInterval(interval)
-				return
-			}
 
-			const ms = timeout * 60 * 1000
-			const messages = await channel.messages.fetch()
-			const diff = Date.now() - (messages.first()?.createdTimestamp ?? channel.createdTimestamp)
+	const interval = setInterval(async () => {
+		if (!channel) {
+			clearInterval(interval)
+			return
+		}
 
-			if (diff >= ms) {
-				await archive(channel)
-				clearInterval(interval)
-			}
-		},
-		refreshInterval,
-		channel
-	)
+		const ms = timeout * 60 * 1000
+		const messages = await channel.messages.fetch()
+		const diff = Date.now() - (messages.first()?.createdTimestamp ?? channel.createdTimestamp)
+
+		if (diff >= ms) {
+			await archive(channel)
+			clearInterval(interval)
+		}
+	}, refreshInterval)
 }
 export async function refresh(client: Client) {
 	await all<Config>(
