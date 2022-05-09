@@ -55,7 +55,9 @@ module Files {
 	}
 	export async function set<T>(path: string, data: T, silent: boolean) {
 		const raw = JSON.stringify(data, null, "\t")
-		return (await catchlog(path, FS.writeFile(path, raw, { encoding: "utf8" }), silent)).success
+		const dir = path.slice(0, path.lastIndexOf("/"))
+		await catchlog(`Dir ${dir}`, FS.mkdir(dir, { recursive: true }), silent)
+		return (await catchlog(`Set ${path}`, FS.writeFile(path, raw, { encoding: "utf8" }), silent)).success
 	}
 	export async function del(path: string, silent: boolean) {
 		return (await catchlog(`Del (${path})`, FS.rm(path), silent)).success

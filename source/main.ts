@@ -5,15 +5,9 @@ import { Client } from "discord.js"
 import { newLogger } from "./logger"
 import { get } from "./internal/data"
 import { BotConfig } from "./types"
-import { list as buttonList, registerAll as registerButtons } from "./declaration/buttons"
-import {
-	list as commandList,
-	refresh as refreshCommands,
-	registerAll as registerCommands,
-} from "./declaration/commands"
-import { refresh as refreshMail } from "./internal/mail"
+import { MailCommand, PollCommand, refreshCommands } from "./declaration/declaration"
 import initModals from "discord-modals"
-import { list as modalList, registerAll as registerModals } from "./declaration/modals"
+import { Action } from "./internal/action"
 
 const client = new Client({ intents: [] })
 const logger = newLogger("client")
@@ -29,26 +23,26 @@ client.on("ready", async (client) => {
 	const config = await loadConfig()
 	client.user.setPresence(config.presence)
 
-	registerModals()
-	registerButtons()
-	await registerCommands()
 	await refreshCommands(client.user.id, config.dev ? process.env["DEVGUILDID"] : undefined)
-	await refreshMail(client)
+	await MailCommand.refresh(client)
+	await PollCommand.refresh(client)
 })
 client.on("interactionCreate", async (interact) => {
 	if (interact.user.bot) return
 	logger.info(`Interact (${interact.id})`)
 
 	if (interact.isCommand()) {
-		const entry = commandList.find(({ data: { name } }) => name === interact.commandName)
+		const entry = Action.getOfType("command").find(({ data: { name } }) => name === interact.commandName)
 
 		if (!!entry) {
-			await entry.action.invoke(interact, client)
+			await entry.invoke(interact, client)
 		} else {
 			logger.error(`Interact (${interact.commandName})`)
 		}
 	} else if (interact.isButton()) {
-		const entry = buttonList.find(({ name }) => name === `button/${interact.customId.split(";")[0]!}`)
+		const entry = Action.getOfType("button").find(
+			({ name }) => name === `button/${interact.customId.split(";")[0]!}`
+		)
 
 		if (!!entry) {
 			await entry.invoke(interact, client)
@@ -58,7 +52,7 @@ client.on("interactionCreate", async (interact) => {
 	}
 })
 client.on("modalSubmit", async (modal) => {
-	const entry = modalList.find(({ name }) => name === `modal/${modal.customId.split(";")[0]!}`)
+	const entry = Action.getOfType("modal").find(({ name }) => name === `modal/${modal.customId.split(";")[0]!}`)
 
 	if (!!entry) {
 		await entry.invoke(modal, client)
