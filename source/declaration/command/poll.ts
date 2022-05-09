@@ -91,7 +91,8 @@ export async function subNew(interact: CommandInteraction, embed: Embed) {
 	const output = interact.options.getString("send_results_to", true) as Output
 	const title = interact.options.getString("title", true)
 	const description = interact.options.getString("description", true)
-	const timeout = interact.options.getInteger("timeout") ?? 1440
+	const afkTimeout = interact.options.getInteger("timeout") ?? 1440
+	const timeout = afkTimeout !== -1 ? Math.abs(afkTimeout) : -1
 
 	const config: Config = { type, output, title, description, timeout }
 	const metadata: Metadata = { user: interact.user.id, guild: interact.guild!.id, channel: "", message: "" }
@@ -197,7 +198,10 @@ export function getFormEmbed(interact: CommandInteraction, data: Data, embed: Em
 		})
 		.fields({
 			name: `Duration`,
-			value: `${data.config.timeout} minutes (${(data.config.timeout / 60).toFixed(1)} hours)`,
+			value:
+				data.config.timeout !== -1
+					? `${data.config.timeout} minutes (${(data.config.timeout / 60).toFixed(1)} hours)`
+					: "Never",
 			inline: true,
 		})
 		.fields({
@@ -314,7 +318,7 @@ export async function refresh(client: Client) {
 	await all<Data>(
 		"poll",
 		async (data) => {
-			if (!data.metadata.message || !data.active) return
+			if (!data.metadata.message || !data.active || data.config.timeout === -1) return
 			const guild = await client.guilds.fetch(data.metadata.guild)
 			const channel = (await guild.channels.fetch(data.metadata.channel)) as TextChannel
 			const message = await channel.messages.fetch(data.metadata.message)
