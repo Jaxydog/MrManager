@@ -115,8 +115,9 @@ export const action = new Action<CommandInteraction>("command/apply").fetchData(
 	})
 })
 
-export async function close(type: string, message: Message) {
+export async function close(type: string, message: Message, reason?: string) {
 	message.embeds[0]!.title = `(${type.toUpperCase()})`
+	if (reason) message.embeds[0]!.description += `\n**Reason:** ${reason}`
 
 	const components = message.components.map((row) => {
 		row.components.map((component) => {

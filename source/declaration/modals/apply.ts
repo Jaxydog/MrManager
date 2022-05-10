@@ -71,7 +71,7 @@ export const denyModal = new Action<ModalSubmitInteraction>("modal/apply-deny").
 		await dm.send({ embeds: [reply.build()] })
 
 		const message = await interact.channel!.messages.fetch(interact.message.id)
-		await close("denied", message)
+		await close("denied", message, interact.getTextInputValue("reason"))
 
 		embed.title("Application denied!")
 	}
@@ -104,7 +104,7 @@ export const resubmitModal = new Action<ModalSubmitInteraction>("modal/apply-res
 		await dm.send({ embeds: [reply.build()] })
 
 		const message = await interact.channel!.messages.fetch(interact.message.id)
-		await close("resubmit", message)
+		await close("resubmit", message, interact.getTextInputValue("reason"))
 
 		embed.title("Application resubmit requested!")
 	}
