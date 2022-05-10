@@ -9,6 +9,13 @@ export const modalButton = new Action<ButtonInteraction>("button/apply-modal").i
 	const path = `apps/${interact.guild!.id}`
 	const data = (await get<Data>(path, true))!
 
+	if (data.responses.find((r) => r.user === interact.user.id)?.accepted) {
+		return await interact.reply({
+			embeds: [new Embed().title("You have already been accepted!").build()],
+			ephemeral: true,
+		})
+	}
+
 	const form = new Modal().setCustomId("apply-modal").setTitle(`Apply to ${interact.guild!.name}`)
 
 	for (const question of data.questions) {
