@@ -1,6 +1,7 @@
 import { ModalSubmitInteraction } from "discord-modals"
 import { Action } from "../../internal/action"
 import { get, set } from "../../internal/data"
+import { Embed } from "../../wrapper/embed"
 import { PollCommand } from "../declaration"
 
 export const modalModal = new Action<ModalSubmitInteraction>("modal/poll-modal").invokes(async (interact) => {
@@ -18,5 +19,5 @@ export const modalModal = new Action<ModalSubmitInteraction>("modal/poll-modal")
 	})
 
 	await set(path, data, true)
-	await interact.update({})
+	await interact.followUp({ embeds: [new Embed().build()], ephemeral: true })
 })
