@@ -124,13 +124,18 @@ export async function timeout(channel: TextChannel) {
 			return
 		}
 
-		const ms = timeout * 60 * 1000
-		const messages = await channel.messages.fetch()
-		const diff = Date.now() - (messages.first()?.createdTimestamp ?? channel.createdTimestamp)
+		try {
+			const ms = timeout * 60 * 1000
+			const messages = await channel.messages.fetch()
+			const diff = Date.now() - (messages.first()?.createdTimestamp ?? channel.createdTimestamp)
 
-		if (diff >= ms) {
-			await archive(channel)
+			if (diff >= ms) {
+				await archive(channel)
+				clearInterval(interval)
+			}
+		} catch (error) {
 			clearInterval(interval)
+			return
 		}
 	}, refreshInterval)
 }
