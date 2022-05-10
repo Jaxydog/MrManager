@@ -19,7 +19,7 @@ export const action = new Action<CommandInteraction>("command/embed").fetchData(
 	const embed = new Embed()
 		.author(authorName, authorIcon, authorUrl)
 		.title(title)
-		.description(description)
+		.description(description.replaceAll("\\n", "\n").replaceAll("\\t", "\t"))
 		.image(image)
 		.thumbnail(thumbnail)
 		.footer(footerText, footerIcon)
