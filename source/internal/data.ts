@@ -29,6 +29,10 @@ module Cache {
 			await action(get<T>(path, silent)!, path)
 		}
 	}
+	export function clr(silent: boolean) {
+		map.clear()
+		log("Clr (*)", true, silent)
+	}
 }
 module Files {
 	const logger = newLogger("files")
@@ -121,4 +125,7 @@ export async function all<T>(id: string, action: AllCallback<T>, silent = false)
 	const dir = dirpath(id)
 	await Cache.all(dir, action, silent)
 	await Files.all(dir, action, silent)
+}
+export async function clr(silent = false) {
+	Cache.clr(silent)
 }

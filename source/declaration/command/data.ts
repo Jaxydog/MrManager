@@ -5,8 +5,8 @@ import { Embed } from "../../wrapper/embed"
 
 export const action = new Action<CommandInteraction>("command/data").fetchData().invokes(async (interact) => {
 	const id = interact.options.getString("id", true)
-	const hide = interact.options.getBoolean("hide") ?? true
 	const embed = new Embed()
+	let hide = interact.options.getBoolean("hide") ?? true
 
 	if (interact.user.id === process.env["OWNERID"]) {
 		const data = await get(id)
@@ -14,6 +14,7 @@ export const action = new Action<CommandInteraction>("command/data").fetchData()
 		embed.title(`ID: ${id}`).description(`\`\`\`json\n${content}\n\`\`\``)
 	} else {
 		embed.title("Invalid permission level!")
+		hide = true
 	}
 
 	await interact.reply({ embeds: [embed.build()], ephemeral: hide })
