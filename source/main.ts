@@ -22,6 +22,7 @@ async function loadConfig() {
 client.on("ready", async (client) => {
 	const config = await loadConfig()
 	client.user.setPresence(config.presence)
+	setInterval(() => client.user.setPresence(config.presence), config.refreshInterval)
 
 	if (!config.dev) await refreshCommands(client.user.id)
 	await refreshCommands(client.user.id, process.env["DEVGUILDID"])
