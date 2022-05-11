@@ -48,12 +48,12 @@ export const newButton = new Action<ButtonInteraction>("button/mail-new").invoke
 			parent: config.category,
 			type: 0,
 		})) as TextChannel
+		await channel.permissionOverwrites.create(interact.user, { SEND_MESSAGES: true, VIEW_CHANNEL: true })
 
 		config.channels.push({ user: interact.user.id, channel: channel.id })
 		await set(path, config, true)
 
 		const component = new Component()
-
 		component.add(MailCommand.closeButton)
 		component.add(MailCommand.infoButton)
 
