@@ -3,9 +3,9 @@ DotEnv.config()
 
 import { Client } from "discord.js"
 import { newLogger } from "./logger"
-import { get } from "./internal/data"
+import { get, has, set } from "./internal/data"
 import { BotConfig } from "./types"
-import { MailCommand, PollCommand, refreshCommands } from "./declaration/declaration"
+import { ApplyCommand, MailCommand, PollCommand, refreshCommands } from "./declaration/declaration"
 import initModals from "discord-modals"
 import { Action } from "./internal/action"
 
@@ -59,6 +59,19 @@ client.on("modalSubmit", async (modal) => {
 		await entry.invoke(modal, client)
 	} else {
 		logger.error(`Modal (${modal.customId})`)
+	}
+})
+client.on("guildMemberRemove", async (member) => {
+	const apps = `apps/${member.guild.id}`
+
+	if (await has(apps, true)) {
+		const data = (await get<ApplyCommand.Data>(apps, true))!
+
+		if (data.responses.some((r) => r.user === member.id)) {
+			const index = data.responses.findIndex((r) => r.user === member.id)
+			data.responses.splice(index)
+			await set(apps, data, true)
+		}
 	}
 })
 
