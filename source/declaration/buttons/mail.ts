@@ -21,7 +21,7 @@ export const infoButton = new Action<ButtonInteraction>("button/mail-info").invo
 			},
 			{
 				name: "Archiving",
-				value: "Channels are archived upon request or AFK timeout.\nAll messages send within ModMail™️ channels **are saved** for moderation purposes.",
+				value: "Channels are archived upon request or AFK timeout.\nAll messages sent within ModMail™️ channels **are saved** for moderation purposes.",
 			},
 			{
 				name: "Inactivity",
