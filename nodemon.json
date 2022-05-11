@@ -1,6 +1,9 @@
 {
 	"ignore": [
-		"./data/*",
+		"./data/apps/*",
+		"./data/mail/*",
+		"./data/poll/*",
+		"./data/role/*",
 		"./logs/*",
 		"./node_modules/*",
 		"./source/*",
