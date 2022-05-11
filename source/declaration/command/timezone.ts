@@ -13,31 +13,39 @@ export const action = new Action<CommandInteraction>("command/timezone").fetchDa
 	if (!data) {
 		embed.description("*No data*")
 	} else {
-		const zones: Map<string, number> = new Map()
+		const count = new Map()
+		const zones = data.responses
+			.filter((r) => !!r.timezone)
+			.map((r) => r.timezone!.toUpperCase())
+			.map((r) => {
+				if (r === "UTC-0") r = "UTC+0"
+				return r
+			})
+			.sort((a, b) => {
+				const aoffset = +a.replace("UTC", "")
+				const boffset = +b.replace("UTC", "")
+				return aoffset - boffset
+			})
 
-		for (let { timezone } of data.responses) {
-			if (!timezone) continue
-			timezone = timezone.toUpperCase() as ApplyCommand.Timezone
-			if (timezone === "UTC-0") timezone = "UTC+0"
-
-			let count = zones.get(timezone) ?? 0
-			zones.set(timezone, ++count)
+		for (const zone of zones) {
+			let number = count.get(zone) ?? 0
+			count.set(zone, ++number)
 		}
 
-		const total = [...zones.values()].reduce((p, c) => p + c)
-		const mean = [...zones.keys()].find((zone, _, arr) => {
+		const total = +[...count.values()].reduce((p, c) => p + c)
+		const mean = [...count.keys()].find((zone, _, arr) => {
 			return arr.every((other) => {
-				const zoneVal = zones.get(zone)!
-				const otherVal = zones.get(other)!
+				const zoneVal = count.get(zone)!
+				const otherVal = count.get(other)!
 				return zoneVal >= otherVal
 			})
 		})!
 
 		embed.description(`**Most common zone:** ${mean}`)
 
-		for (const timezone of zones.keys()) {
-			const count = zones.get(timezone)!
-			const percent = total !== 0 ? count / total : 0
+		for (const timezone of count.keys()) {
+			const number = count.get(timezone)!
+			const percent = total !== 0 ? number / total : 0
 
 			embed.fields({
 				name: timezone,
