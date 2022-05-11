@@ -3,6 +3,7 @@ import { Action } from "../../internal/action"
 import { get } from "../../internal/data"
 import { Embed } from "../../wrapper/embed"
 import { ApplyCommand } from "../declaration"
+import { Timezone } from "./apply"
 
 export const action = new Action<CommandInteraction>("command/timezone").fetchData().invokes(async (interact) => {
 	const path = `apps/${interact.guild!.id}`
@@ -13,24 +14,24 @@ export const action = new Action<CommandInteraction>("command/timezone").fetchDa
 	if (!data) {
 		embed.description("*No data*")
 	} else {
-		const count = new Map()
-		const zones = data.responses
+		const count: Map<Timezone, number> = new Map()
+
+		data.responses
 			.filter((r) => !!r.timezone)
-			.map((r) => r.timezone!.toUpperCase())
 			.map((r) => {
-				if (r === "UTC-0") r = "UTC+0"
-				return r
+				r.timezone = r.timezone!.toUpperCase() as Timezone
+				if (r.timezone === "UTC-0") r.timezone = "UTC+0"
+				return r.timezone
 			})
 			.sort((a, b) => {
 				const aoffset = +a.replace("UTC", "")
 				const boffset = +b.replace("UTC", "")
 				return aoffset - boffset
 			})
-
-		for (const zone of zones) {
-			let number = count.get(zone) ?? 0
-			count.set(zone, ++number)
-		}
+			.forEach((z) => {
+				let c = count.get(z) ?? 0
+				count.set(z, ++c)
+			})
 
 		const total = +[...count.values()].reduce((p, c) => p + c)
 		const mean = [...count.keys()].find((zone, _, arr) => {
@@ -41,7 +42,7 @@ export const action = new Action<CommandInteraction>("command/timezone").fetchDa
 			})
 		})!
 
-		embed.description(`**Most common zone:** ${mean}`)
+		embed.description(`**Most common zone:** ${mean ?? "N/A"}`)
 
 		for (const timezone of count.keys()) {
 			const number = count.get(timezone)!
