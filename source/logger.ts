@@ -1,7 +1,6 @@
 import Logger, { Level, Rule } from "@jaxydog/clogts"
 import dayjs from "dayjs"
 
-Logger.store = false
 Logger.default.colors.create("name", "hsl(320, 35%, 65%)")
 Logger.default.colors.create("lt.i", "hsl(190, 35%, 65%)")
 Logger.default.colors.create("lt.w", "hsl(35, 55%, 65%)")
