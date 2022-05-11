@@ -23,7 +23,8 @@ client.on("ready", async (client) => {
 	const config = await loadConfig()
 	client.user.setPresence(config.presence)
 
-	await refreshCommands(client.user.id, config.dev ? process.env["DEVGUILDID"] : undefined)
+	if (!config.dev) await refreshCommands(client.user.id)
+	await refreshCommands(client.user.id, process.env["DEVGUILDID"])
 	await MailCommand.refresh(client)
 	await PollCommand.refresh(client)
 })
