@@ -44,7 +44,7 @@ export const action = new Action<CommandInteraction>("command/timezone").fetchDa
 				})
 			})
 
-			embed.description(`**Most common zone:** ${mean ?? "N/A"}`)
+			embed.description(`**Mean:** ${mean ?? "N/A"}`)
 
 			for (const timezone of count.keys()) {
 				const number = count.get(timezone)!
