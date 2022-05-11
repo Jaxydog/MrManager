@@ -1,0 +1,19 @@
+{
+	"name": "data",
+	"description": "Displays stored data",
+	"options": [
+		{
+			"name": "id",
+			"description": "Data id",
+			"type": 3,
+			"required": true
+		},
+		{
+			"name": "hide",
+			"description": "Whether to make the embed ephemeral",
+			"type": 5
+		}
+	],
+	"default_member_permissions": "0",
+	"dm_permission": false
+}

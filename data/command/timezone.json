@@ -1,0 +1,13 @@
+{
+	"name": "timezone",
+	"description": "Displays the guild's timezone makeup",
+	"options": [
+		{
+			"name": "display",
+			"description": "Whether to show the message (default false)",
+			"type": 5
+		}
+	],
+	"default_member_permissions": "0",
+	"dm_permission": false
+}

@@ -1,0 +1,26 @@
+{
+	"name": "mail",
+	"description": "Sets up a user-to-moderator mailing system for your guild",
+	"options": [
+		{
+			"name": "channel",
+			"description": "Mail entry channel",
+			"type": 7,
+			"required": true
+		},
+		{
+			"name": "category",
+			"description": "Channel output category",
+			"type": 7,
+			"required": true
+		},
+		{
+			"name": "timeout",
+			"description": "Duration (minutes) before the channel auto-archives due to inactivity",
+			"type": 4,
+			"required": true
+		}
+	],
+	"default_member_permissions": "0",
+	"dm_permission": false
+}

@@ -1,0 +1,53 @@
+{
+	"name": "apply",
+	"description": "Sets up server applications",
+	"options": [
+		{
+			"name": "output",
+			"description": "Channel to output application messages",
+			"type": 7,
+			"required": true
+		},
+		{
+			"name": "role",
+			"description": "Role to give to members who are accepted",
+			"type": 8,
+			"required": true
+		},
+		{
+			"name": "description",
+			"description": "Guild application embed description",
+			"type": 3,
+			"required": true
+		},
+		{
+			"name": "branding",
+			"description": "Guild image branding (URL)",
+			"type": 3,
+			"required": true
+		},
+		{
+			"name": "question_1",
+			"description": "Application question",
+			"type": 3,
+			"required": true
+		},
+		{
+			"name": "question_2",
+			"description": "Application question",
+			"type": 3
+		},
+		{
+			"name": "question_3",
+			"description": "Application question",
+			"type": 3
+		},
+		{
+			"name": "question_4",
+			"description": "Application question",
+			"type": 3
+		}
+	],
+	"default_member_permissions": "0",
+	"dm_permission": false
+}

@@ -1,0 +1,124 @@
+{
+	"name": "poll",
+	"description": "Creates and manages polls",
+	"options": [
+		{
+			"name": "new",
+			"description": "Creates a new poll",
+			"type": 1,
+			"options": [
+				{
+					"name": "type",
+					"description": "Poll type",
+					"type": 3,
+					"choices": [
+						{
+							"name": "Multiple Choice",
+							"value": "choice"
+						},
+						{
+							"name": "User Input",
+							"value": "modal"
+						}
+					],
+					"required": true
+				},
+				{
+					"name": "send_results_to",
+					"description": "Where to send the poll's results",
+					"type": 3,
+					"choices": [
+						{
+							"name": "Me",
+							"value": "user"
+						},
+						{
+							"name": "This channel",
+							"value": "channel"
+						}
+					],
+					"required": true
+				},
+				{
+					"name": "title",
+					"description": "Poll title",
+					"type": 3,
+					"required": true
+				},
+				{
+					"name": "description",
+					"description": "Poll description",
+					"type": 3,
+					"required": true
+				},
+				{
+					"name": "timeout",
+					"description": "Time before the poll automatically closed (minutes)",
+					"type": 4
+				}
+			]
+		},
+		{
+			"name": "discard",
+			"description": "Discards the current poll",
+			"type": 1,
+			"options": []
+		},
+		{
+			"name": "add",
+			"description": "Adds an option to the poll",
+			"type": 1,
+			"options": [
+				{
+					"name": "name",
+					"description": "Option name",
+					"type": 3,
+					"required": true
+				},
+				{
+					"name": "emoji",
+					"description": "Option emoji",
+					"type": 3,
+					"required": true
+				},
+				{
+					"name": "required",
+					"description": "Whether the option is required; only applies to user input polls",
+					"type": 5
+				}
+			]
+		},
+		{
+			"name": "remove",
+			"description": "Removes an option from the poll",
+			"type": 1,
+			"options": [
+				{
+					"name": "name",
+					"description": "Option name",
+					"type": 3,
+					"required": true
+				}
+			]
+		},
+		{
+			"name": "list",
+			"description": "Lists the added options",
+			"type": 1,
+			"options": []
+		},
+		{
+			"name": "post",
+			"description": "Posts the poll",
+			"type": 1,
+			"options": []
+		},
+		{
+			"name": "close",
+			"description": "Closes a poll",
+			"type": 1,
+			"options": []
+		}
+	],
+	"dm_permission": false
+}

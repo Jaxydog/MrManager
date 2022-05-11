@@ -1,0 +1,58 @@
+{
+	"name": "role",
+	"description": "Manages roles",
+	"options": [
+		{
+			"name": "add",
+			"description": "Adds a role selector",
+			"type": 1,
+			"options": [
+				{
+					"name": "role",
+					"description": "Target role",
+					"type": 8,
+					"required": true
+				},
+				{
+					"name": "icon",
+					"description": "Role icon (emoji)",
+					"type": 3,
+					"required": true
+				}
+			]
+		},
+		{
+			"name": "remove",
+			"description": "Removes a role selector",
+			"type": 1,
+			"options": [
+				{
+					"name": "role",
+					"description": "Target role",
+					"type": 8,
+					"required": true
+				}
+			]
+		},
+		{
+			"name": "list",
+			"description": "Lists the added roles",
+			"type": 1
+		},
+		{
+			"name": "post",
+			"description": "Posts the role selector message",
+			"type": 1,
+			"options": [
+				{
+					"name": "title",
+					"description": "Selector title",
+					"type": 3,
+					"required": true
+				}
+			]
+		}
+	],
+	"default_member_permissions": "0",
+	"dm_permission": false
+}

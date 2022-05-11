@@ -1,0 +1,25 @@
+{
+	"dev": false,
+	"intents": [
+		"DIRECT_MESSAGES",
+		"GUILDS",
+		"GUILD_BANS",
+		"GUILD_INVITES",
+		"GUILD_MEMBERS",
+		"GUILD_MESSAGES",
+		"GUILD_MESSAGE_REACTIONS",
+		"GUILD_SCHEDULED_EVENTS",
+		"GUILD_VOICE_STATES"
+	],
+	"presence": {
+		"status": "dnd",
+		"activities": [
+			{
+				"type": "STREAMING",
+				"name": "business",
+				"url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+			}
+		]
+	},
+	"refreshInterval": 5000
+}
