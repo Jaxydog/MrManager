@@ -33,26 +33,31 @@ export const action = new Action<CommandInteraction>("command/timezone").fetchDa
 				count.set(z, ++c)
 			})
 
-		const total = +[...count.values()].reduce((p, c) => p + c)
-		const mean = [...count.keys()].find((zone, _, arr) => {
-			return arr.every((other) => {
-				const zoneVal = count.get(zone)!
-				const otherVal = count.get(other)!
-				return zoneVal >= otherVal
+		const total = count.size !== 0 ? +[...count.values()].reduce((p, c) => p + c) : 0
+
+		if (total !== 0) {
+			const mean = [...count.keys()].find((zone, _, arr) => {
+				return arr.every((other) => {
+					const zoneVal = count.get(zone)!
+					const otherVal = count.get(other)!
+					return zoneVal >= otherVal
+				})
 			})
-		})!
 
-		embed.description(`**Most common zone:** ${mean ?? "N/A"}`)
+			embed.description(`**Most common zone:** ${mean ?? "N/A"}`)
 
-		for (const timezone of count.keys()) {
-			const number = count.get(timezone)!
-			const percent = total !== 0 ? number / total : 0
+			for (const timezone of count.keys()) {
+				const number = count.get(timezone)!
+				const percent = total !== 0 ? number / total : 0
 
-			embed.fields({
-				name: timezone,
-				value: `${(percent * 100).toFixed(2)}%`,
-				inline: true,
-			})
+				embed.fields({
+					name: timezone,
+					value: `${(percent * 100).toFixed(2)}%`,
+					inline: true,
+				})
+			}
+		} else {
+			embed.description("*No timezone data provided*")
 		}
 	}
 
