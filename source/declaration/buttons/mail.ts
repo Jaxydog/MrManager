@@ -1,9 +1,9 @@
 import { ButtonInteraction, TextChannel } from "discord.js"
 import { Action } from "../../internal/action"
-import { get, set } from "../../internal/data"
+import { get, has, set } from "../../internal/data"
 import { Component } from "../../wrapper/component"
 import { Embed } from "../../wrapper/embed"
-import { MailCommand } from "../declaration"
+import { ApplyCommand, MailCommand } from "../declaration"
 
 export const infoButton = new Action<ButtonInteraction>("button/mail-info").invokes(async (interact) => {
 	const { timeout } = (await get<MailCommand.Config>(`mail/${interact.guild!.id}`, true))!
@@ -33,13 +33,16 @@ export const infoButton = new Action<ButtonInteraction>("button/mail-info").invo
 })
 export const newButton = new Action<ButtonInteraction>("button/mail-new").invokes(async (interact) => {
 	const path = `mail/${interact.guild!.id}`
+	const apps = `apps/${interact.guild!.id}`
+	const appData = await get<ApplyCommand.Data>(apps, true)
 	const config = (await get<MailCommand.Config>(path, true))!
 	const embed = new Embed()
 
-	if (config.channels.some(({ user }) => user === interact.user.id)) {
+	if (appData && !appData.responses.some((r) => r.user === interact.user.id && r.accepted)) {
+		embed.title("You must be a member of this guild to use ModMail™️!")
+	} else if (config.channels.some(({ user }) => user === interact.user.id)) {
 		const { channel } = config.channels.find(({ user }) => user === interact.user.id)!
 		embed.title("You already have an active channel!").description(`<#${channel}>`)
-		await interact.reply({ embeds: [embed.build()], ephemeral: true })
 	} else {
 		const channel = (await interact.guild!.channels.create(interact.user.username, {
 			parent: config.category,
@@ -60,8 +63,8 @@ export const newButton = new Action<ButtonInteraction>("button/mail-new").invoke
 			embeds: [new Embed().title("An admin / moderator will be with you shortly!").build()],
 			components: component.build(),
 		})
-		await interact.reply({ embeds: [embed.build()], ephemeral: true })
 	}
+	await interact.reply({ embeds: [embed.build()], ephemeral: true })
 })
 export const closeButton = new Action<ButtonInteraction>("button/mail-close").invokes(async (interact) => {
 	await MailCommand.archive(interact.channel as TextChannel)
