@@ -1,0 +1,23 @@
+{
+	"name": "offer",
+	"description": "Posts a trade or service offer",
+	"options": [
+		{
+			"name": "offering",
+			"description": "The item / service that are you offering",
+			"type": 3,
+			"required": true
+		},
+		{
+			"name": "wanting",
+			"description": "The item / service that you want in return",
+			"type": 3
+		},
+		{
+			"name": "duration",
+			"description": "The amount of time (hours) that you will be offering this",
+			"type": 4
+		}
+	],
+	"dm_permission": false
+}
