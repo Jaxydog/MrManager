@@ -1,4 +1,4 @@
-import { Client, CommandInteraction, MessageButton, TextChannel } from "discord.js"
+import { Client, CommandInteraction, MessageAttachment, MessageButton, MessageEmbed, TextChannel } from "discord.js"
 import { MessageButtonStyles } from "discord.js/typings/enums"
 import { Action } from "../../internal/action"
 import { all, get, has, set } from "../../internal/data"
@@ -6,6 +6,7 @@ import { BotConfig } from "../../types"
 import { Component } from "../../wrapper/component"
 import { Embed } from "../../wrapper/embed"
 
+export type Subcommand = "setup" | "list" | "view"
 export interface Config {
 	guild: string
 	channel: string
@@ -16,6 +17,19 @@ export interface Config {
 		user: string
 		channel: string
 	}[]
+}
+export interface ArchiveUser {
+	id: string
+	tag: string
+}
+export interface Archive {
+	user: ArchiveUser
+	content: string
+	attachments: MessageAttachment[]
+	embeds: MessageEmbed[]
+	edited: boolean
+	mentions: ArchiveUser[]
+	timestamp: string
 }
 
 export const newButton = new MessageButton()
@@ -41,47 +55,139 @@ mailComponent.add(newButton)
 mailComponent.add(infoButton)
 
 export const action = new Action<CommandInteraction>("command/mail").fetchData().invokes(async (interact) => {
-	const channel = interact.options.getChannel("channel", true)
-	const category = interact.options.getChannel("category", true)
-	const afkTimeout = interact.options.getInteger("timeout", true)
+	const subcommand = interact.options.getSubcommand(true) as Subcommand
+	let embed: Embed
 
-	const embed = new Embed()
-
-	if (channel.type !== "GUILD_TEXT") {
-		embed.title("Invalid channel type!")
-	} else if (category.type !== "GUILD_CATEGORY") {
-		embed.title("Invalid category type!")
-	} else {
-		const path = `mail/${interact.guild!.id}`
-		const hasPrevious = await has(path, true)
-
-		if (hasPrevious.result) {
-			const data = (await get<Config>(path, true))!
-			const channel = (await interact.guild!.channels.fetch(data.channel)) as TextChannel
-			const message = await channel.messages.fetch(data.message)
-			if (message && message.deletable) await message.delete()
+	switch (subcommand) {
+		case "setup": {
+			embed = await subSetup(interact, new Embed())
+			break
 		}
-
-		const message = await interact.channel!.send({
-			embeds: [mailEmbed.build()],
-			components: mailComponent.build(),
-		})
-		const config: Config = {
-			guild: interact.guild!.id,
-			channel: channel.id,
-			message: message.id,
-			category: category.id,
-			timeout: Math.abs(afkTimeout ?? 720),
-			channels: [],
+		case "list": {
+			embed = await subList(interact, new Embed())
+			break
 		}
-
-		await set(path, config, true)
-		timeout(channel)
-		embed.title("Setup successful!")
+		case "view": {
+			embed = await subView(interact, new Embed())
+			break
+		}
 	}
 
 	await interact.reply({ embeds: [embed.build()], ephemeral: true })
 })
+
+export async function subSetup(interact: CommandInteraction, embed: Embed) {
+	const category = interact.options.getChannel("category", true)
+	const afkTimeout = interact.options.getInteger("timeout", true)
+	const path = `mail/${interact.guild!.id}`
+
+	if (category.type !== "GUILD_CATEGORY") {
+		return embed.title("Invalid category type!")
+	}
+
+	if ((await has(path, true)).result) {
+		const data = (await get<Config>(path, true))!
+		const channel = (await interact.guild!.channels.fetch(data.channel)) as TextChannel | null
+
+		if (channel) {
+			const message = await channel.messages.fetch(data.message)
+			if (message && message.deletable) await message.delete()
+		}
+	}
+
+	const message = await interact.channel!.send({
+		embeds: [mailEmbed.build()],
+		components: mailComponent.build(),
+	})
+
+	const config: Config = {
+		guild: interact.guild!.id,
+		channel: interact.channel!.id,
+		message: message.id,
+		category: category.id,
+		timeout: Math.abs(afkTimeout ?? 720),
+		channels: [],
+	}
+
+	await set(path, config, true)
+
+	return embed.title("Setup successful!")
+}
+export async function subList(interact: CommandInteraction, embed: Embed) {
+	const dir = "mail/archive"
+
+	embed.title("Archived mail channels")
+	let count = 0
+
+	await all<Archive[]>(
+		dir,
+		(data, path) => {
+			const memberSet = new Set(data.map((a) => `<@${a.user.id}>`).sort())
+			const list = [...memberSet.values()].join(", ")
+			const id = path.replace("data/mail/archive//", "").replace(".json", "")
+
+			if (++count >= 25) return
+
+			embed.fields({
+				name: id,
+				value: list,
+			})
+		},
+		true
+	)
+
+	embed.description(`${count} archives (${Math.max(0, count - 25)} not shown)`)
+
+	return embed
+}
+export async function subView(interact: CommandInteraction, embed: Embed) {
+	const id = interact.options.getString("id", true)
+	const path = `mail/archive/${id}`
+
+	embed.title(`Archive ${id}`)
+
+	if (!(await has(path, true)).result) {
+		return embed.title("Invalid id!")
+	}
+
+	const data = (await get<Archive[]>(path, true))!
+	let desc = ""
+	let lost = 0
+
+	for (const message of data) {
+		if (desc.length >= 4096) {
+			lost++
+			continue
+		}
+
+		let temp = ""
+		const user = `<@${message.user.id}>`
+		const time = message.timestamp
+		const edited = message.edited ? "(edited)" : ""
+		const content = message.content.length !== 0 ? message.content : "*No content*"
+		const embeds = message.embeds.length !== 0 ? "[+embeds]" : ""
+		const attachments = message.attachments.length !== 0 ? "[+attachments]" : ""
+		const text = `${content} ${attachments} ${embeds}`.trim()
+
+		temp += `${user} ${time} ${edited}\n> ${text}`
+
+		if (message.mentions.length !== 0) {
+			temp += "\n**Mentions:** "
+			temp += message.mentions.map((u) => `<@${u.id}>`).join(", ")
+		}
+
+		temp += "\n\n"
+
+		if (desc.length + temp.length >= 4096) {
+			lost++
+			continue
+		}
+
+		desc += temp
+	}
+
+	return embed.description(desc.trim()).footer(`${lost !== 0 ? `Not displaying ${lost} messages` : ""}`)
+}
 
 export async function archive(channel: TextChannel) {
 	const path = `mail/${channel.guild.id}`
@@ -89,7 +195,7 @@ export async function archive(channel: TextChannel) {
 	const message = await channel.messages.fetch()
 
 	if (message.size > 1) {
-		await set(
+		await set<Archive[]>(
 			`mail/archive/${channel.id}`,
 			message.reverse().map((message) => ({
 				user: {
