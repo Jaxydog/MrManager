@@ -104,6 +104,7 @@ export async function archive(channel: TextChannel) {
 					id: m.user.id,
 					tag: m.user.tag,
 				})),
+				timestamp: message.createdAt.toUTCString(),
 			})),
 			true
 		)
