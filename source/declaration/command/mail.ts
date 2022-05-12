@@ -114,7 +114,7 @@ export async function subSetup(interact: CommandInteraction, embed: Embed) {
 	return embed.title("Setup successful!")
 }
 export async function subList(interact: CommandInteraction, embed: Embed) {
-	const dir = "mail/archive"
+	const dir = `mail/archive/${interact.guild!.id}`
 
 	embed.title("Archived mail channels")
 	let count = 0
@@ -142,7 +142,7 @@ export async function subList(interact: CommandInteraction, embed: Embed) {
 }
 export async function subView(interact: CommandInteraction, embed: Embed) {
 	const id = interact.options.getString("id", true)
-	const path = `mail/archive/${id}`
+	const path = `mail/archive/${interact.guild!.id}/${id}`
 
 	embed.title(`Archive ${id}`)
 
@@ -196,7 +196,7 @@ export async function archive(channel: TextChannel) {
 
 	if (message.size > 1) {
 		await set<Archive[]>(
-			`mail/archive/${channel.id}`,
+			`mail/archive/${channel.guild.id}/${channel.id}`,
 			message.reverse().map((message) => ({
 				user: {
 					id: message.author.id,
