@@ -127,6 +127,10 @@ export async function subAdd(interact: CommandInteraction, embed: Embed) {
 	const required = interact.options.getBoolean("required") ?? true
 	const option: Option = { name, emoji, required }
 
+	if (data.options.some((o) => o.name === name)) {
+		return embed.title("Option already exists!")
+	}
+
 	data.options.push(option)
 	const { result } = await set(path, data, true)
 	return embed.title(result ? "Added option!" : "Error adding option!")
@@ -229,7 +233,9 @@ export function getFormModal(component: Component) {
 	return component
 }
 export function getResults(data: Data) {
-	const embed = new Embed().title(`Results for poll "${data.config.title}"`)
+	const embed = new Embed()
+		.title(`Results for poll "${data.config.title}"`)
+		.description(`**Responses:** ${data.responses.length}`)
 
 	if (data.config.type === "choice") {
 		for (const option of data.options) {
