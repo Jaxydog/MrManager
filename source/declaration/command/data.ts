@@ -14,15 +14,15 @@ export const action = new Action<CommandInteraction>("command/data").fetchData()
 	} else {
 		switch (subcommand) {
 			case "view": {
-				embed = await Command.subView(interact, embed)
+				embed = await Command.viewSub(interact, embed)
 				break
 			}
 			case "dump": {
-				embed = await Command.subDump(embed)
+				embed = await Command.dumpSub(embed)
 				break
 			}
 			case "clear": {
-				embed = await Command.subClear(embed)
+				embed = await Command.clearSub(embed)
 				break
 			}
 		}
@@ -32,24 +32,26 @@ export const action = new Action<CommandInteraction>("command/data").fetchData()
 })
 
 export module Command {
-	export async function subView(interact: CommandInteraction, embed: Embed) {
+	export async function viewSub(interact: CommandInteraction, embed: Embed) {
 		const id = interact.options.getString("id", true)
 		const data = await get(id)
 		const content = JSON.stringify(data ? data : { error: "Data not stored!" }, null, "\t")
 		return embed.title(`ID: ${id}`).description(`\`\`\`json\n${content}\n\`\`\``)
 	}
-	export async function subDump(embed: Embed) {
+	export async function dumpSub(embed: Embed) {
 		let desc = ""
-		Cache.all(
+
+		await Cache.all(
 			"",
 			(_, path) => {
 				desc += `\`${path}\`\n`
 			},
 			true
 		)
-		return embed.title("Cache contents").description(desc.trim())
+
+		return embed.title("Cache contents").description(desc)
 	}
-	export async function subClear(embed: Embed) {
+	export async function clearSub(embed: Embed) {
 		Cache.clr(true)
 		return embed.title("Cleared data cache!")
 	}

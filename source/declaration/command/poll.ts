@@ -42,12 +42,6 @@ export interface Data {
 	responses: Response[]
 }
 
-export const modalBtn = new MessageButton()
-	.setCustomId("poll-modal")
-	.setStyle(MessageButtonStyles.PRIMARY)
-	.setLabel("Submit Response")
-	.setEmoji("📩")
-
 export const action = new Action<CommandInteraction>("command/poll").fetchData().invokes(async (interact, client) => {
 	const subgroup = interact.options.getSubcommandGroup(false) as Subgroup
 	const subcommand = interact.options.getSubcommand(true) as Subcommand | OptionSubcommand
@@ -96,6 +90,13 @@ export const action = new Action<CommandInteraction>("command/poll").fetchData()
 	await interact.reply({ embeds: [embed.build()], ephemeral: true })
 })
 
+export module Predefined {
+	export const modalBtn = new MessageButton()
+		.setCustomId("poll-modal")
+		.setStyle(MessageButtonStyles.PRIMARY)
+		.setLabel("Submit Response")
+		.setEmoji("📩")
+}
 export module Commands {
 	export async function createSub(interact: CommandInteraction, embed: Embed) {
 		const path = Utility.dataPath(interact.guild!.id, interact.user.id)
@@ -183,7 +184,7 @@ export module Commands {
 				component.add(button)
 			}
 		} else {
-			component.add(modalBtn)
+			component.add(Predefined.modalBtn)
 		}
 
 		const message = await interact.channel!.send({ embeds: [form.build()], components: component.build() })

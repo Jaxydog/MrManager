@@ -11,13 +11,6 @@ export * as OfferCommand from "./command/offer"
 export * as PingCommand from "./command/ping"
 export * as PollCommand from "./command/poll"
 export * as RoleCommand from "./command/role"
-export * as TimezoneCommand from "./command/timezone"
-
-export * as ApplyButton from "./buttons/apply"
-export * as MailButton from "./buttons/mail"
-export * as RoleButton from "./buttons/role"
-
-export * as ApplyModal from "./modals/apply"
 
 export async function refreshCommands(clientId: string, guildId?: string) {
 	const body = Action.getOfType("command")
