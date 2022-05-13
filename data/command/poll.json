@@ -3,7 +3,7 @@
 	"description": "Creates and manages polls",
 	"options": [
 		{
-			"name": "new",
+			"name": "create",
 			"description": "Creates a new poll",
 			"type": 1,
 			"options": [
@@ -24,23 +24,7 @@
 					"required": true
 				},
 				{
-					"name": "send_results_to",
-					"description": "Where to send the poll's results",
-					"type": 3,
-					"choices": [
-						{
-							"name": "Me",
-							"value": "user"
-						},
-						{
-							"name": "This channel",
-							"value": "channel"
-						}
-					],
-					"required": true
-				},
-				{
-					"name": "title",
+					"name": "name",
 					"description": "Poll title",
 					"type": 3,
 					"required": true
@@ -52,6 +36,21 @@
 					"required": true
 				},
 				{
+					"name": "output",
+					"description": "Where to send the poll's results",
+					"type": 3,
+					"choices": [
+						{
+							"name": "Me",
+							"value": "user"
+						},
+						{
+							"name": "This channel",
+							"value": "channel"
+						}
+					]
+				},
+				{
 					"name": "timeout",
 					"description": "Time before the poll automatically closed (minutes)",
 					"type": 4
@@ -59,56 +58,63 @@
 			]
 		},
 		{
-			"name": "discard",
+			"name": "delete",
 			"description": "Discards the current poll",
 			"type": 1,
 			"options": []
 		},
 		{
-			"name": "add",
-			"description": "Adds an option to the poll",
-			"type": 1,
+			"name": "option",
+			"description": "Creates and manages poll options",
+			"type": 2,
 			"options": [
 				{
-					"name": "name",
-					"description": "Option name",
-					"type": 3,
-					"required": true
+					"name": "create",
+					"description": "Creates a new option",
+					"type": 1,
+					"options": [
+						{
+							"name": "name",
+							"description": "Option name",
+							"type": 3,
+							"required": true
+						},
+						{
+							"name": "icon",
+							"description": "Option icon (emoji)",
+							"type": 3,
+							"required": true
+						},
+						{
+							"name": "required",
+							"description": "Whether the option is required; only applies to User Input polls",
+							"type": 5
+						}
+					]
 				},
 				{
-					"name": "emoji",
-					"description": "Option emoji",
-					"type": 3,
-					"required": true
-				},
-				{
-					"name": "required",
-					"description": "Whether the option is required; only applies to user input polls",
-					"type": 5
+					"name": "delete",
+					"description": "Discards an option",
+					"type": 1,
+					"options": [
+						{
+							"name": "name",
+							"description": "Option name",
+							"type": 3,
+							"required": true
+						}
+					]
 				}
 			]
 		},
 		{
-			"name": "remove",
-			"description": "Removes an option from the poll",
-			"type": 1,
-			"options": [
-				{
-					"name": "name",
-					"description": "Option name",
-					"type": 3,
-					"required": true
-				}
-			]
-		},
-		{
-			"name": "list",
-			"description": "Lists the added options",
+			"name": "view",
+			"description": "Views the current poll",
 			"type": 1,
 			"options": []
 		},
 		{
-			"name": "post",
+			"name": "send",
 			"description": "Posts the poll",
 			"type": 1,
 			"options": []

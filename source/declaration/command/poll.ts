@@ -1,4 +1,4 @@
-import { Client, CommandInteraction, Message, MessageButton, TextChannel } from "discord.js"
+import { Client, CommandInteraction, EmbedFieldData, Message, MessageButton, TextChannel } from "discord.js"
 import { MessageButtonStyles } from "discord.js/typings/enums"
 import { Action } from "../../internal/action"
 import { all, del, get, has, set } from "../../internal/data"
@@ -6,33 +6,35 @@ import { BotConfig } from "../../types"
 import { Component } from "../../wrapper/component"
 import { Embed } from "../../wrapper/embed"
 
-export type Subcommand = "new" | "discard" | "add" | "remove" | "list" | "post" | "close"
+export type Subgroup = "option" | null
+export type Subcommand = "create" | "delete" | "view" | "send" | "close"
+export type OptionSubcommand = "create" | "delete"
 export type Type = "choice" | "modal"
 export type Output = "user" | "channel"
+
 export interface Config {
 	type: Type
-	output: Output
-	title: string
+	name: string
 	description: string
+	output: Output
 	timeout: number
 }
 export interface Metadata {
 	user: string
 	guild: string
-	channel: string
-	message: string
+	channel?: string
+	message?: string
 }
 export interface Option {
 	name: string
-	emoji: string
+	icon: string
 	required: boolean
 }
 export interface Response {
 	user: string
-	content: string
+	data: string
 }
 export interface Data {
-	active: boolean
 	config: Config
 	metadata: Metadata
 	options: Option[]
@@ -46,296 +48,339 @@ export const modalButton = new MessageButton()
 	.setEmoji("📩")
 
 export const action = new Action<CommandInteraction>("command/poll").fetchData().invokes(async (interact, client) => {
-	const subcommand = interact.options.getSubcommand(true) as Subcommand
-	let embed: Embed
+	const subgroup = interact.options.getSubcommandGroup(false) as Subgroup
+	const subcommand = interact.options.getSubcommand(true) as Subcommand | OptionSubcommand
+	let embed = new Embed()
 
-	switch (subcommand) {
-		case "new": {
-			embed = await subNew(interact, new Embed())
+	switch (subgroup) {
+		case "option": {
+			switch (subcommand as OptionSubcommand) {
+				case "create": {
+					embed = await Command.Option.createSub(interact, embed)
+					break
+				}
+				case "delete": {
+					embed = await Command.Option.deleteSub(interact, embed)
+					break
+				}
+			}
 			break
 		}
-		case "discard": {
-			embed = await subDiscard(interact, new Embed())
-			break
-		}
-		case "add": {
-			embed = await subAdd(interact, new Embed())
-			break
-		}
-		case "remove": {
-			embed = await subRemove(interact, new Embed())
-			break
-		}
-		case "list": {
-			embed = await subList(interact, new Embed())
-			break
-		}
-		case "post": {
-			embed = await subPost(interact, client, new Embed())
-			break
-		}
-		case "close": {
-			embed = await subClose(interact, client, new Embed())
-			break
+		default: {
+			switch (subcommand) {
+				case "create": {
+					embed = await Command.createSub(interact, embed)
+					break
+				}
+				case "delete": {
+					embed = await Command.deleteSub(interact, embed)
+					break
+				}
+				case "view": {
+					embed = await Command.viewSub(interact, embed)
+					break
+				}
+				case "send": {
+					embed = await Command.sendSub(interact, client, embed)
+					break
+				}
+				case "close": {
+					embed = await Command.closeSub(interact, client, embed)
+					break
+				}
+			}
 		}
 	}
 
 	await interact.reply({ embeds: [embed.build()], ephemeral: true })
 })
 
-export async function subNew(interact: CommandInteraction, embed: Embed) {
-	const path = `poll/${interact.guild!.id}_${interact.user.id}`
-	if ((await has(path, true)).result) return embed.title("Poll already created!")
+export module Command {
+	export async function createSub(interact: CommandInteraction, embed: Embed) {
+		const path = Utility.dataPath(interact.guild!.id, interact.user.id)
+		const type = interact.options.getString("type", true) as Type
+		const name = interact.options.getString("name", true)
+		const description = interact.options.getString("description", true)
+		const output = (interact.options.getString("output") ?? "channel") as Output
+		const afk = interact.options.getInteger("timeout") ?? -1
+		const timeout = afk !== -1 ? Math.abs(afk) : -1
 
-	const type = interact.options.getString("type", true) as Type
-	const output = interact.options.getString("send_results_to", true) as Output
-	const title = interact.options.getString("title", true)
-	const description = interact.options.getString("description", true)
-	const afkTimeout = interact.options.getInteger("timeout") ?? 1440
-	const timeout = afkTimeout !== -1 ? Math.abs(afkTimeout) : -1
-
-	const config: Config = { type, output, title, description, timeout }
-	const metadata: Metadata = { user: interact.user.id, guild: interact.guild!.id, channel: "", message: "" }
-	const data: Data = { active: true, config, metadata, options: [], responses: [] }
-
-	const { result } = await set(path, data, true)
-	return embed.title(result ? "Created poll!" : "Error creating poll!")
-}
-export async function subDiscard(interact: CommandInteraction, embed: Embed) {
-	const path = `poll/${interact.guild!.id}_${interact.user.id}`
-	const data = (await get<Data>(path, true))!
-
-	if (data.metadata.message) return embed.title("You cannot discard a posted poll!")
-
-	await del(path, true)
-	return embed.title("Discarded poll!")
-}
-export async function subAdd(interact: CommandInteraction, embed: Embed) {
-	const path = `poll/${interact.guild!.id}_${interact.user.id}`
-	if (!(await has(path, true)).result) return embed.title("No active poll!")
-	const data = (await get<Data>(path, true))!
-
-	if (
-		(data.config.type === "choice" && data.options.length >= 10) ||
-		(data.config.type === "modal" && data.options.length >= 5)
-	) {
-		return embed.title("Maximum options added!")
-	}
-
-	const name = interact.options.getString("name", true)
-	const emoji = interact.options.getString("emoji", true)
-	const required = interact.options.getBoolean("required") ?? true
-	const option: Option = { name, emoji, required }
-
-	if (data.options.some((o) => o.name === name)) {
-		return embed.title("Option already exists!")
-	}
-
-	data.options.push(option)
-	const { result } = await set(path, data, true)
-	return embed.title(result ? "Added option!" : "Error adding option!")
-}
-export async function subRemove(interact: CommandInteraction, embed: Embed) {
-	const path = `poll/${interact.guild!.id}_${interact.user.id}`
-	if (!(await has(path, true)).result) return embed.title("No active poll!")
-	const data = (await get<Data>(path, true))!
-
-	const name = interact.options.getString("name", true)
-	const index = data.options.findIndex((o) => o.name === name)
-
-	if (index !== -1) {
-		data.options.splice(index)
-		const { result } = await set(path, data, true)
-		return embed.title(result ? "Removed option!" : "Error removing option!")
-	} else {
-		return embed.title("Option already removed!")
-	}
-}
-export async function subList(interact: CommandInteraction, embed: Embed) {
-	const path = `poll/${interact.guild!.id}_${interact.user.id}`
-	if (!(await has(path, true)).result) return embed.title("No active poll!")
-	const data = (await get<Data>(path, true))!
-	if (data.metadata.message) return getResults(data)
-	const description = data.options.map((o) => `${o.emoji} ${o.name}`).join("\n")
-	return embed.title(data.config.title).description(description !== "" ? description : "*No options added*")
-}
-export async function subPost(interact: CommandInteraction, client: Client, embed: Embed) {
-	const path = `poll/${interact.guild!.id}_${interact.user.id}`
-	if (!(await has(path, true)).result) return embed.title("No active poll!")
-	const data = (await get<Data>(path, true))!
-	if (data.options.length === 0) return embed.title("No poll options!")
-	const formEmbed = getFormEmbed(interact, data, new Embed())
-	const formComponent =
-		data.config.type === "choice" ? getFormChoice(data, new Component()) : getFormModal(new Component())
-
-	if (data.metadata.message) return embed.title("Poll already exists!")
-
-	const message = await interact.channel!.send({ embeds: [formEmbed.build()], components: formComponent.build() })
-	data.metadata.channel = message.channel!.id
-	data.metadata.message = message.id
-
-	if (data.config.timeout !== -1) timeout(client, message, data)
-
-	const { result } = await set(path, data, true)
-	return embed.title(result ? "Posted poll!" : "Error posting poll!")
-}
-export async function subClose(interact: CommandInteraction, client: Client, embed: Embed) {
-	const path = `poll/${interact.guild!.id}_${interact.user.id}`
-	if (!(await has(path, true)).result) return embed.title("No active poll!")
-	const data = (await get<Data>(path, true))!
-	const channel = (await interact.guild!.channels.fetch(data.metadata.channel)) as TextChannel
-	const message = await channel.messages.fetch(data.metadata.message)
-
-	await closePoll(client, data)
-	await sendResults(message, data)
-	return embed.title("Closed poll!")
-}
-
-export function getFormEmbed(interact: CommandInteraction, data: Data, embed: Embed) {
-	return embed
-		.author(interact.user.tag, interact.user.avatarURL() ?? undefined)
-		.title(data.config.title)
-		.description(`${data.config.description}`)
-		.fields({
-			name: `Type`,
-			value: `${data.config.type === "choice" ? "Multiple choice" : "Text input"}`,
-			inline: true,
-		})
-		.fields({
-			name: `Duration`,
-			value:
-				data.config.timeout !== -1
-					? `${data.config.timeout} minutes (${(data.config.timeout / 60).toFixed(1)} hours)`
-					: "Never",
-			inline: true,
-		})
-		.fields({
-			name: `Outputs to`,
-			value: `${data.config.output === "channel" ? "This channel" : "The poll author"}`,
-			inline: true,
-		})
-		.footer(`${data.metadata.guild}-${data.metadata.user}`)
-}
-export function getFormChoice(data: Data, component: Component) {
-	for (const option of data.options) {
-		component.add(
-			new MessageButton()
-				.setCustomId(`poll-option;${data.options.indexOf(option)}`)
-				.setStyle(MessageButtonStyles.SECONDARY)
-				.setLabel(option.name)
-				.setEmoji(option.emoji)
-		)
-	}
-	return component
-}
-export function getFormModal(component: Component) {
-	component.add(modalButton)
-	return component
-}
-export function getResults(data: Data) {
-	const embed = new Embed()
-		.title(`Results for poll "${data.config.title}"`)
-		.description(`**Responses:** ${data.responses.length}`)
-
-	if (data.config.type === "choice") {
-		for (const option of data.options) {
-			const responses = data.responses.filter(({ content }) => content === option.name)
-			const percent = data.responses.length !== 0 ? responses.length / data.responses.length : 0
-
-			embed.fields({
-				name: option.name,
-				value: `${(percent * 100).toFixed(2)}%`,
-				inline: true,
-			})
+		if ((await has(path)).result) {
+			return embed.title("Poll already created!")
 		}
-	} else {
-		for (const option of data.options) {
-			const responses = data.responses.filter((response) => {
-				const responseData = JSON.parse(response.content) as Record<string, string>
-				return !!responseData[option.name]
-			})
-			const content = responses
-				.map((response) => {
-					const responseData = JSON.parse(response.content) as Record<string, string>
-					return `- ${responseData[option.name]!}`
-				})
-				.join("\n")
 
-			embed.fields({
-				name: option.name,
-				value: content !== "" ? content : "*No responses*",
-			})
+		const config: Config = { type, name, description, output, timeout }
+		const metadata: Metadata = { user: interact.user.id, guild: interact.guild!.id }
+		const data: Data = { config, metadata, options: [], responses: [] }
+
+		const { result } = await set(path, data)
+		return embed.title(result ? "Created poll!" : "Error creating poll!")
+	}
+	export async function deleteSub(interact: CommandInteraction, embed: Embed) {
+		const path = Utility.dataPath(interact.guild!.id, interact.user.id)
+
+		if (!(await has(path)).result) {
+			return embed.title("You don't have an active poll!")
+		}
+
+		const data = (await get<Data>(path))!
+
+		if (!!data.metadata.message) {
+			return embed.title("You can't discard a sent poll!")
+		}
+
+		const { result } = await del(path)
+		return embed.title(result ? "Discarded poll!" : "Error discarding poll!")
+	}
+	export async function viewSub(interact: CommandInteraction, embed: Embed) {
+		const path = Utility.dataPath(interact.guild!.id, interact.user.id)
+
+		if (!(await has(path)).result) {
+			return embed.title("You don't have an active poll!")
+		}
+
+		const data = (await get<Data>(path))!
+
+		if (!!data.metadata.message) {
+			return Utility.getResult(data)
+		} else {
+			return Utility.getEmbed(interact, data).fields(
+				...data.options.map((o) => ({
+					name: `${o.icon} ${o.name}`,
+					value: `Required: \`${o.required}\``,
+					inline: true,
+				}))
+			)
 		}
 	}
+	export async function sendSub(interact: CommandInteraction, client: Client, embed: Embed) {
+		const path = Utility.dataPath(interact.guild!.id, interact.user.id)
 
-	return embed
-}
-export async function closePoll(client: Client, data: Data) {
-	const path = `poll/${data.metadata.guild}_${data.metadata.user}`
-	const guild = await client.guilds.fetch(data.metadata.guild)
-	const channel = (await guild.channels.fetch(data.metadata.channel)) as TextChannel
-	const message = await channel.messages.fetch(data.metadata.message)
+		if (!(await has(path)).result) {
+			return embed.title("You don't have an active poll!")
+		}
 
-	message.embeds[0]!.title += " (CLOSED)"
-	data.active = false
+		const data = (await get<Data>(path))!
 
-	const embeds = message.embeds
-	const components = message.components.map((row) => {
-		row.components.map((component) => {
-			component.setDisabled(true)
-			return component
-		})
-		return row
-	})
+		if (data.options.length === 0) {
+			return embed.title("You don't have any options!")
+		}
+		if (!!data.metadata.message) {
+			return embed.title("Poll already sent!")
+		}
 
-	await message.edit({ embeds, components })
-	await del(path, true)
-}
-export async function sendResults(message: Message, data: Data) {
-	const embed = getResults(data)
+		const form = Utility.getEmbed(interact, data)
+		const component = new Component()
 
-	if (data.config.output === "channel") {
-		await message.reply({ embeds: [embed.build()] })
-	} else {
-		const user = await message.guild!.members.fetch(data.metadata.user)
-		const dm = await user.createDM()
-		await dm.send({ embeds: [embed.build()] })
+		if (data.config.type === "choice") {
+			for (const option of data.options) {
+				const button = new MessageButton()
+					.setCustomId(`poll-option;${data.options.indexOf(option)}`)
+					.setStyle(MessageButtonStyles.SECONDARY)
+					.setLabel(option.name)
+					.setEmoji(option.icon)
+				component.add(button)
+			}
+		} else {
+			component.add(modalButton)
+		}
+
+		const message = await interact.channel!.send({ embeds: [form.build()], components: component.build() })
+		data.metadata.channel = message.channel!.id
+		data.metadata.message = message.id
+
+		const { result } = await set(path, data)
+		return embed.title(result ? "Sent poll!" : "Error sending poll!")
 	}
-}
-export async function timeout(client: Client, message: Message, data: Data) {
-	const { refreshInterval } = (await get<BotConfig>("bot/config", true))!
+	export async function closeSub(interact: CommandInteraction, client: Client, embed: Embed) {
+		const path = Utility.dataPath(interact.guild!.id, interact.user.id)
 
-	const interval = setInterval(async () => {
+		if (!(await has(path)).result) {
+			return embed.title("You don't have an active poll!")
+		}
+
+		const data = (await get<Data>(path))!
+
+		if (!data.metadata.message) {
+			return embed.title("Poll has not been sent!")
+		}
+
+		const channel = (await interact.guild!.channels.fetch(data.metadata.channel!)) as TextChannel
+		const message = await channel.messages.fetch(data.metadata.message!)
+
 		if (!message) {
-			clearInterval(interval)
-			return
+			return embed.title("Error finding poll message!")
 		}
 
-		if (!(await get<Data>(`poll/${data.metadata.guild}_${data.metadata.user}`, true))?.active) {
-			clearInterval(interval)
-			return
-		}
+		await Utility.closePoll(message, data)
+		await Utility.sendResult(message, data)
+		return embed.title("Closed poll!")
+	}
 
-		const ms = data.config.timeout * 60 * 1000
-		const diff = Date.now() - message.createdTimestamp
+	export module Option {
+		export async function createSub(interact: CommandInteraction, embed: Embed) {
+			const path = Utility.dataPath(interact.guild!.id, interact.user.id)
+			const name = interact.options.getString("name", true)
+			const icon = interact.options.getString("icon", true)
+			const required = interact.options.getBoolean("required") ?? true
 
-		if (diff >= ms) {
-			await closePoll(client, data)
-			await sendResults(message, data)
-			clearInterval(interval)
+			if (!(await has(path)).result) {
+				return embed.title("You don't have an active poll!")
+			}
+
+			const data = (await get<Data>(path))!
+			const choiceMax = data.config.type === "choice" && data.options.length >= 10
+			const modalMax = data.config.type === "modal" && data.options.length >= 5
+
+			if (!!data.metadata.message) {
+				return embed.title("You can't modify a sent poll!")
+			}
+			if (data.options.some((o) => o.name === name)) {
+				return embed.title(`Option "${name}" already exists!`)
+			}
+			if (choiceMax || modalMax) {
+				return embed.title("Maximum number of options reached!")
+			}
+
+			data.options.push({ name, icon, required })
+			const { result } = await set(path, data)
+			return embed.title(result ? "Created new option!" : "Error creating option!")
 		}
-	}, refreshInterval)
+		export async function deleteSub(interact: CommandInteraction, embed: Embed) {
+			const path = Utility.dataPath(interact.guild!.id, interact.user.id)
+			const name = interact.options.getString("name", true)
+
+			if (!(await has(path)).result) {
+				return embed.title("You don't have an active poll!")
+			}
+
+			const data = (await get<Data>(path))!
+
+			if (!!data.metadata.message) {
+				return embed.title("You can't modify a sent poll!")
+			}
+			if (!data.options.some((o) => o.name === name)) {
+				return embed.title(`Option "${name}" does not exist!`)
+			}
+
+			const index = data.options.findIndex((o) => o.name === name)
+			data.options.splice(index)
+
+			const { result } = await set(path, data)
+			return embed.title(result ? "Removed option!" : "Error removing option!")
+		}
+	}
 }
-export async function refresh(client: Client) {
-	await all<Data>(
-		"poll",
-		async (data) => {
-			if (!data.metadata.message || !data.active || data.config.timeout === -1) return
-			const guild = await client.guilds.fetch(data.metadata.guild)
-			const channel = (await guild.channels.fetch(data.metadata.channel)) as TextChannel
-			const message = await channel.messages.fetch(data.metadata.message)
-			timeout(client, message, data)
-		},
-		true
-	)
+export module Utility {
+	export function dataPath(guildId: string, userId: string) {
+		return `poll/${guildId}_${userId}`
+	}
+	export function getEmbed(interact: CommandInteraction, data: Data) {
+		const type = data.config.type === "choice" ? "Multiple choice" : "Text input"
+		const output = data.config.output === "channel" ? "This channel" : "Poll author"
+		const duration =
+			data.config.timeout === -1
+				? "Indefinite"
+				: `${data.config.timeout} minutes (${(data.config.timeout / 60).toFixed(1)} hours)`
+
+		return new Embed()
+			.author(interact.user.tag, interact.user.avatarURL() ?? undefined)
+			.title(data.config.name)
+			.description(data.config.description)
+			.fields(
+				{
+					name: "Poll Type",
+					value: type,
+				},
+				{
+					name: "Result Output",
+					value: output,
+				},
+				{
+					name: "Poll Duration",
+					value: duration,
+				}
+			)
+			.footer(`${data.metadata.guild}_${data.metadata.user}`)
+	}
+	export function getResult(data: Data) {
+		const total = data.responses.length
+		const embed = new Embed()
+			.title(`Results for "${data.config.name}"`)
+			.description(`**Total Responses:** ${total}`)
+
+		if (data.config.type === "choice") {
+			for (const option of data.options) {
+				const chosen = data.responses.filter((r) => r.data === option.name).length
+				const ratio = total !== 0 ? chosen / total : 0
+				const percent = `${(ratio * 100).toFixed(2)}%`
+				const value = `${chosen} (${percent})`
+
+				embed.fields({ name: option.name, value, inline: true })
+			}
+		} else {
+			for (const option of data.options) {
+				const content = data.responses
+					.map((r) => JSON.parse(r.data) as Record<string, string>)
+					.filter((r) => r[option.name])
+					.map((r) => `- ${r[option.name]!}`)
+					.join("\n")
+
+				embed.fields({
+					name: option.name,
+					value: content !== "" ? content : "*No responses*",
+				})
+			}
+		}
+		return embed
+	}
+	export async function closePoll(message: Message, data: Data) {
+		const path = dataPath(data.metadata.guild, data.metadata.user)
+
+		message.embeds[0]!.title = `(CLOSED) ${message.embeds[0]!.title}`
+
+		const embeds = message.embeds
+		const components = message.components.map((r) => {
+			r.components.map((c) => c.setDisabled(true))
+			return r
+		})
+
+		await message.edit({ embeds, components })
+		const { result } = await del(path)
+		return result
+	}
+	export async function sendResult(message: Message, data: Data) {
+		const embed = getResult(data)
+
+		if (data.config.output === "channel") {
+			await message.reply({ embeds: [embed.build()] })
+		} else {
+			const user = await message.guild!.members.fetch(data.metadata.user)
+			const dm = await user.createDM()
+			await dm.send({ embeds: [embed.build()] })
+		}
+	}
+	export async function refresh(client: Client) {
+		const { refreshInterval } = (await get<BotConfig>("bot/config"))!
+
+		setInterval(async () => {
+			await all<Data>("poll", async (data) => {
+				if (!data.metadata.channel || !data.metadata.message || data.config.timeout === -1) return
+
+				try {
+					const guild = await client.guilds.fetch(data.metadata.guild)
+					const channel = (await guild.channels.fetch(data.metadata.channel)) as TextChannel
+					const message = await channel.messages.fetch(data.metadata.message)
+
+					const ms = data.config.timeout * 60 * 1000
+					const diff = Date.now() - message.createdTimestamp
+
+					if (diff >= ms) {
+						await closePoll(message, data)
+						await sendResult(message, data)
+					}
+				} catch {}
+			})
+		}, refreshInterval)
+	}
 }

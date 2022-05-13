@@ -2,9 +2,9 @@ import { Awaitable } from "discord.js"
 import FS from "fs/promises"
 import { newLogger } from "../logger.js"
 
-type AllCallback<T> = (data: T, path: string) => Awaitable<void>
+export type AllCallback<T> = (data: T, path: string) => Awaitable<void>
 
-module Cache {
+export module Cache {
 	const logger = newLogger("cache")
 	const map: Map<string, unknown> = new Map()
 
@@ -28,13 +28,15 @@ module Cache {
 		for (const path of [...map.keys()].filter((k) => k.startsWith(dir))) {
 			await action(get<T>(path, silent)!, path)
 		}
+		log(`All (${dir})`, true, silent)
+		return true
 	}
 	export function clr(silent: boolean) {
 		map.clear()
 		log("Clr (*)", true, silent)
 	}
 }
-module Files {
+export module Files {
 	const logger = newLogger("files")
 
 	type CatchLogResult<T> = { success: true; result: T } | { success: false; result?: never }
@@ -67,36 +69,42 @@ module Files {
 		return (await catchlog(`Del (${path})`, FS.rm(path), silent)).success
 	}
 	export async function all<T>(dir: string, action: AllCallback<T>, silent: boolean) {
-		const ents = (await FS.readdir(dir, { withFileTypes: true })).filter((e) => e.isFile())
+		const { success, result } = await catchlog(`All (${dir})`, FS.readdir(dir, { withFileTypes: true }), silent)
 
-		for (const ent of ents) {
-			const path = filepath(`${dir}/${ent.name}`)
+		if (!success) return false
+
+		const files = result.filter((e) => e.isFile())
+
+		for (const file of files) {
+			const path = filepath(`${dir}${file.name}`)
 			const data = (await get<T>(path, silent))!
 			await action(data, path)
 		}
+
+		return true
 	}
 }
 
-function dirpath(id: string) {
+export function dirpath(id: string) {
 	const start = id.startsWith("data/") ? "" : "data/"
 	const noext = id.endsWith(".json") ? id.slice(0, id.lastIndexOf(".json")) : id
 	const slash = noext.endsWith("/") ? id : `${id}/`
 	return `${start}${slash}`
 }
-function filepath(id: string) {
+export function filepath(id: string) {
 	const start = id.startsWith("data/") ? "" : "data/"
 	const json = id.endsWith(".json") ? id : `${id}.json`
 	return `${start}${json}`
 }
 
-export async function has(id: string, silent = false) {
+export async function has(id: string, silent = true) {
 	const path = filepath(id)
 	const cache = Cache.has(path, silent)
 	const files = await Files.has(path, silent)
 	const result = cache || files
 	return { cache, files, result }
 }
-export async function get<T>(id: string, silent = false) {
+export async function get<T>(id: string, silent = true) {
 	const path = filepath(id)
 
 	if (Cache.has(path, silent)) {
@@ -107,25 +115,27 @@ export async function get<T>(id: string, silent = false) {
 		return data
 	}
 }
-export async function set<T>(id: string, data: T, silent = false) {
+export async function set<T>(id: string, data: T, silent = true) {
 	const path = filepath(id)
 	const cache = Cache.set<T>(path, data, silent)
 	const files = await Files.set<T>(path, data, silent)
 	const result = cache && files
 	return { cache, files, result }
 }
-export async function del(id: string, silent = false) {
+export async function del(id: string, silent = true) {
 	const path = filepath(id)
 	const cache = Cache.del(path, silent)
 	const files = await Files.del(path, silent)
 	const result = cache && files
 	return { cache, files, result }
 }
-export async function all<T>(id: string, action: AllCallback<T>, silent = false) {
+export async function all<T>(id: string, action: AllCallback<T>, silent = true) {
 	const dir = dirpath(id)
-	await Cache.all(dir, action, silent)
-	await Files.all(dir, action, silent)
+	const cache = await Cache.all(dir, action, silent)
+	const files = await Files.all(dir, action, silent)
+	const result = cache && files
+	return { cache, files, result }
 }
-export async function clr(silent = false) {
+export async function clr(silent = true) {
 	Cache.clr(silent)
 }

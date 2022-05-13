@@ -6,11 +6,10 @@ import { Embed } from "../../wrapper/embed"
 import { PollCommand } from "../declaration"
 
 export const modalButton = new Action<ButtonInteraction>("button/poll-modal").invokes(async (interact, client) => {
-	const [guildId, userId] = interact.message.embeds[0]!.footer!.text.split("-") as [string, string]
-	const path = `poll/${guildId}_${userId}`
+	const path = `poll/${interact.message.embeds[0]!.footer!.text}`
 	const data = (await get<PollCommand.Data>(path, true))!
 
-	if (interact.user.id === userId) {
+	if (interact.user.id === data.metadata.user) {
 		return await interact.reply({
 			embeds: [new Embed().title("You can't respond to your own poll!").build()],
 			ephemeral: true,
@@ -23,14 +22,16 @@ export const modalButton = new Action<ButtonInteraction>("button/poll-modal").in
 		})
 	}
 
-	const form = new Modal().setCustomId(`poll-modal;${guildId};${userId}`).setTitle(interact.message.embeds[0]!.title!)
+	const form = new Modal()
+		.setCustomId(`poll-modal;${data.metadata.guild};${data.metadata.user}`)
+		.setTitle(interact.message.embeds[0]!.title!)
 
 	for (const option of data.options) {
 		form.addComponents(
 			new TextInputComponent()
 				.setCustomId(`${option.name}`)
 				.setStyle("LONG")
-				.setLabel(`${option.emoji} ${option.name} ${option.emoji}`)
+				.setLabel(`${option.icon} ${option.name} ${option.icon}`)
 				.setRequired(option.required)
 		)
 	}
@@ -38,11 +39,10 @@ export const modalButton = new Action<ButtonInteraction>("button/poll-modal").in
 	await showModal(form, { client, interaction: interact })
 })
 export const optionButton = new Action<ButtonInteraction>("button/poll-option").invokes(async (interact) => {
-	const [guildId, userId] = interact.message.embeds[0]!.footer!.text.split("-") as [string, string]
-	const path = `poll/${guildId}_${userId}`
+	const path = `poll/${interact.message.embeds[0]!.footer!.text}`
 	const data = (await get<PollCommand.Data>(path, true))!
 
-	if (interact.user.id === userId) {
+	if (interact.user.id === data.metadata.user) {
 		return await interact.reply({
 			embeds: [new Embed().title("You can't respond to your own poll!").build()],
 			ephemeral: true,
@@ -57,7 +57,7 @@ export const optionButton = new Action<ButtonInteraction>("button/poll-option").
 
 	data.responses.push({
 		user: interact.user.id,
-		content: interact.component.label!,
+		data: interact.component.label!,
 	})
 	await set(path, data, true)
 	interact.deferUpdate()

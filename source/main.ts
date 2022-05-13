@@ -27,7 +27,7 @@ client.on("ready", async (client) => {
 	if (!config.dev) await refreshCommands(client.user.id)
 	await refreshCommands(client.user.id, process.env["DEVGUILDID"])
 	await MailCommand.refresh(client)
-	await PollCommand.refresh(client)
+	await PollCommand.Utility.refresh(client)
 })
 client.on("interactionCreate", async (interact) => {
 	if (interact.user.bot) return

@@ -15,7 +15,7 @@ export const modalModal = new Action<ModalSubmitInteraction>("modal/poll-modal")
 	interact.fields.forEach((f) => (content[f.customId] = f.value))
 	data.responses.push({
 		user: interact.user.id,
-		content: JSON.stringify(content),
+		data: JSON.stringify(content),
 	})
 
 	await set(path, data, true)
