@@ -1,13 +1,5 @@
 import { Modal, ModalSubmitInteraction, showModal, TextInputComponent } from "discord-modals"
-import {
-	ButtonInteraction,
-	Client,
-	CommandInteraction,
-	EmbedFieldData,
-	Message,
-	MessageButton,
-	TextChannel,
-} from "discord.js"
+import { ButtonInteraction, Client, CommandInteraction, Message, MessageButton, TextChannel } from "discord.js"
 import { MessageButtonStyles } from "discord.js/typings/enums"
 import { Action } from "../../internal/action"
 import { all, del, get, has, set } from "../../internal/data"
@@ -328,7 +320,7 @@ export module Buttons {
 	})
 }
 export module Modals {
-	export const modalModal = new Action<ModalSubmitInteraction>("modal/poll-modal").invokes(async (interact) => {
+	export const modalMdl = new Action<ModalSubmitInteraction>("modal/poll-modal").invokes(async (interact) => {
 		const [, guildId, userId] = interact.customId.split(";") as [string, string, string]
 		const path = Utility.dataPath(guildId, userId)
 		const data = (await get<Data>(path))!
