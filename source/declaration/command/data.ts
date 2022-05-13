@@ -18,11 +18,11 @@ export const action = new Action<CommandInteraction>("command/data").fetchData()
 				break
 			}
 			case "dump": {
-				embed = await Command.subDump(interact, embed)
+				embed = await Command.subDump(embed)
 				break
 			}
 			case "clear": {
-				embed = await Command.subClear(interact, embed)
+				embed = await Command.subClear(embed)
 				break
 			}
 		}
@@ -30,6 +30,7 @@ export const action = new Action<CommandInteraction>("command/data").fetchData()
 
 	await interact.reply({ embeds: [embed.build()], ephemeral: true })
 })
+
 export module Command {
 	export async function subView(interact: CommandInteraction, embed: Embed) {
 		const id = interact.options.getString("id", true)
@@ -37,7 +38,7 @@ export module Command {
 		const content = JSON.stringify(data ? data : { error: "Data not stored!" }, null, "\t")
 		return embed.title(`ID: ${id}`).description(`\`\`\`json\n${content}\n\`\`\``)
 	}
-	export async function subDump(interact: CommandInteraction, embed: Embed) {
+	export async function subDump(embed: Embed) {
 		let desc = ""
 		Cache.all(
 			"",
@@ -48,7 +49,7 @@ export module Command {
 		)
 		return embed.title("Cache contents").description(desc.trim())
 	}
-	export async function subClear(interact: CommandInteraction, embed: Embed) {
+	export async function subClear(embed: Embed) {
 		Cache.clr(true)
 		return embed.title("Cleared data cache!")
 	}
