@@ -15,11 +15,9 @@ export * as TimezoneCommand from "./command/timezone"
 
 export * as ApplyButton from "./buttons/apply"
 export * as MailButton from "./buttons/mail"
-export * as PollButton from "./buttons/poll"
 export * as RoleButton from "./buttons/role"
 
 export * as ApplyModal from "./modals/apply"
-export * as PollModal from "./modals/poll"
 
 export async function refreshCommands(clientId: string, guildId?: string) {
 	const body = Action.getOfType("command")

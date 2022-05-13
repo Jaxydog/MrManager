@@ -1,4 +1,13 @@
-import { Client, CommandInteraction, EmbedFieldData, Message, MessageButton, TextChannel } from "discord.js"
+import { Modal, ModalSubmitInteraction, showModal, TextInputComponent } from "discord-modals"
+import {
+	ButtonInteraction,
+	Client,
+	CommandInteraction,
+	EmbedFieldData,
+	Message,
+	MessageButton,
+	TextChannel,
+} from "discord.js"
 import { MessageButtonStyles } from "discord.js/typings/enums"
 import { Action } from "../../internal/action"
 import { all, del, get, has, set } from "../../internal/data"
@@ -41,8 +50,8 @@ export interface Data {
 	responses: Response[]
 }
 
-export const modalButton = new MessageButton()
-	.setCustomId(`poll-modal`)
+export const modalBtn = new MessageButton()
+	.setCustomId("poll-modal")
 	.setStyle(MessageButtonStyles.PRIMARY)
 	.setLabel("Submit Response")
 	.setEmoji("📩")
@@ -56,11 +65,11 @@ export const action = new Action<CommandInteraction>("command/poll").fetchData()
 		case "option": {
 			switch (subcommand as OptionSubcommand) {
 				case "create": {
-					embed = await Command.Option.createSub(interact, embed)
+					embed = await Commands.Option.createSub(interact, embed)
 					break
 				}
 				case "delete": {
-					embed = await Command.Option.deleteSub(interact, embed)
+					embed = await Commands.Option.deleteSub(interact, embed)
 					break
 				}
 			}
@@ -69,23 +78,23 @@ export const action = new Action<CommandInteraction>("command/poll").fetchData()
 		default: {
 			switch (subcommand) {
 				case "create": {
-					embed = await Command.createSub(interact, embed)
+					embed = await Commands.createSub(interact, embed)
 					break
 				}
 				case "delete": {
-					embed = await Command.deleteSub(interact, embed)
+					embed = await Commands.deleteSub(interact, embed)
 					break
 				}
 				case "view": {
-					embed = await Command.viewSub(interact, embed)
+					embed = await Commands.viewSub(interact, embed)
 					break
 				}
 				case "send": {
-					embed = await Command.sendSub(interact, client, embed)
+					embed = await Commands.sendSub(interact, client, embed)
 					break
 				}
 				case "close": {
-					embed = await Command.closeSub(interact, client, embed)
+					embed = await Commands.closeSub(interact, client, embed)
 					break
 				}
 			}
@@ -95,7 +104,7 @@ export const action = new Action<CommandInteraction>("command/poll").fetchData()
 	await interact.reply({ embeds: [embed.build()], ephemeral: true })
 })
 
-export module Command {
+export module Commands {
 	export async function createSub(interact: CommandInteraction, embed: Embed) {
 		const path = Utility.dataPath(interact.guild!.id, interact.user.id)
 		const type = interact.options.getString("type", true) as Type
@@ -182,7 +191,7 @@ export module Command {
 				component.add(button)
 			}
 		} else {
-			component.add(modalButton)
+			component.add(modalBtn)
 		}
 
 		const message = await interact.channel!.send({ embeds: [form.build()], components: component.build() })
@@ -271,6 +280,74 @@ export module Command {
 		}
 	}
 }
+export module Buttons {
+	export const modalBtn = new Action<ButtonInteraction>(`button/poll-modal`).invokes(async (interact, client) => {
+		const [guildId, userId] = interact.message.embeds[0]!.footer!.text.split("_") as [string, string]
+		const path = Utility.dataPath(guildId, userId)
+		const data = (await get<Data>(path))!
+
+		if (interact.user.id === data.metadata.user) {
+			return await interact.reply({
+				embeds: [new Embed().title("You can't respond to your own poll!").build()],
+				ephemeral: true,
+			})
+		}
+		if (data.responses.some((r) => r.user === interact.user.id)) {
+			return await interact.reply({
+				embeds: [new Embed().title("You've already submitted a response!").build()],
+				ephemeral: true,
+			})
+		}
+
+		await showModal(Utility.getModal(data, interact.message.embeds[0]!.title!), {
+			client,
+			interaction: interact,
+		})
+	})
+	export const optionBtn = new Action<ButtonInteraction>(`button/poll-option`).invokes(async (interact) => {
+		const [guildId, userId] = interact.message.embeds[0]!.footer!.text.split("_") as [string, string]
+		const path = Utility.dataPath(guildId, userId)
+		const data = (await get<Data>(path))!
+
+		if (interact.user.id === data.metadata.user) {
+			return await interact.reply({
+				embeds: [new Embed().title("You can't respond to your own poll!").build()],
+				ephemeral: true,
+			})
+		}
+		if (data.responses.some((r) => r.user === interact.user.id)) {
+			return await interact.reply({
+				embeds: [new Embed().title("You've already submitted a response!").build()],
+				ephemeral: true,
+			})
+		}
+
+		data.responses.push({ user: interact.user.id, data: interact.component.label! })
+		const { result } = await set(path, data)
+		if (result) interact.reply({ embeds: [new Embed().title("Response recorded!").build()], ephemeral: true })
+	})
+}
+export module Modals {
+	export const modalModal = new Action<ModalSubmitInteraction>("modal/poll-modal").invokes(async (interact) => {
+		const [, guildId, userId] = interact.customId.split(";") as [string, string, string]
+		const path = Utility.dataPath(guildId, userId)
+		const data = (await get<Data>(path))!
+
+		const content: Record<string, string> = {}
+		interact.fields.forEach((f) => (content[f.customId] = f.value))
+		data.responses.push({
+			user: interact.user.id,
+			data: JSON.stringify(content),
+		})
+
+		const { result } = await set(path, data, true)
+
+		if (result) {
+			await interact.deferReply({ ephemeral: true })
+			await interact.followUp({ embeds: [new Embed().title("Response recorded!").build()], ephemeral: true })
+		}
+	})
+}
 export module Utility {
 	export function dataPath(guildId: string, userId: string) {
 		return `poll/${guildId}_${userId}`
@@ -302,6 +379,22 @@ export module Utility {
 				}
 			)
 			.footer(`${data.metadata.guild}_${data.metadata.user}`)
+	}
+	export function getModal(data: Data, title?: string) {
+		const modal = new Modal()
+			.setCustomId(`poll-modal;${data.metadata.guild};${data.metadata.user}`)
+			.setTitle(title ?? "Poll Submission")
+
+		for (const option of data.options) {
+			const input = new TextInputComponent()
+				.setCustomId(option.name)
+				.setStyle("LONG")
+				.setLabel(`${option.icon} ${option.name} ${option.icon}`)
+				.setRequired(option.required)
+			modal.addComponents(input)
+		}
+
+		return modal
 	}
 	export function getResult(data: Data) {
 		const total = data.responses.length
