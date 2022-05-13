@@ -136,6 +136,3 @@ export async function all<T>(id: string, action: AllCallback<T>, silent = true) 
 	const result = cache && files
 	return { cache, files, result }
 }
-export async function clr(silent = true) {
-	Cache.clr(silent)
-}

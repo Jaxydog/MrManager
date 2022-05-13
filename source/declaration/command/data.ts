@@ -1,6 +1,6 @@
 import { CommandInteraction } from "discord.js"
 import { Action } from "../../internal/action"
-import { Cache, clr, get } from "../../internal/data"
+import { Cache, get } from "../../internal/data"
 import { Embed } from "../../wrapper/embed"
 
 export type Subcommand = "view" | "dump" | "clear"
@@ -49,7 +49,7 @@ export module Command {
 		return embed.title("Cache contents").description(desc.trim())
 	}
 	export async function subClear(interact: CommandInteraction, embed: Embed) {
-		clr(true)
+		Cache.clr(true)
 		return embed.title("Cleared data cache!")
 	}
 }
