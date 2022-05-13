@@ -1,6 +1,0 @@
-{
-	"name": "trash",
-	"description": "Clears the bot's data cache",
-	"default_member_permissions": "0",
-	"dm_permission": false
-}

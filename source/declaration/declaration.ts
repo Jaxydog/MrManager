@@ -12,7 +12,6 @@ export * as PingCommand from "./command/ping"
 export * as PollCommand from "./command/poll"
 export * as RoleCommand from "./command/role"
 export * as TimezoneCommand from "./command/timezone"
-export * as TrashCommand from "./command/trash"
 
 export * as ApplyButton from "./buttons/apply"
 export * as MailButton from "./buttons/mail"
