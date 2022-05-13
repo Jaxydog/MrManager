@@ -204,7 +204,7 @@ export module Buttons {
 	export const infoBtn = new Action<ButtonInteraction>("button/mail-info").invokes(async (interact) => {
 		const path = Utility.dataPath(interact.guild!.id)
 		const { timeout } = (await get<Data>(path))!
-		const hours = (timeout / 60).toPrecision(1)
+		const hours = (timeout / 60).toFixed(1)
 
 		const embed = new Embed()
 			.title("About ModMail™️")
