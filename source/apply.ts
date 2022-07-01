@@ -120,13 +120,13 @@ export function getEntryComponent(user: User, config: Config) {
 		.build()
 	const deny = new ButtonBuilder()
 		.dataId(ID.Apply.Deny, user.id)
-		.style(MessageButtonStyles.SUCCESS)
+		.style(MessageButtonStyles.DANGER)
 		.emoji(Text.Apply.DenyEmoji)
 		.label(Text.Apply.DenyLabel)
 		.build()
 	const resubmit = new ButtonBuilder()
 		.dataId(ID.Apply.Resubmit, user.id)
-		.style(MessageButtonStyles.SUCCESS)
+		.style(MessageButtonStyles.SECONDARY)
 		.emoji(Text.Apply.ResubmitEmoji)
 		.label(Text.Apply.ResubmitLabel)
 		.build()
@@ -649,11 +649,13 @@ client.commands
 					.forEach((z) => zones.set(z, (zones.get(z) ?? 0) + 1))
 
 				const mean = [...zones.keys()].filter((z1, _, a) => {
-					a.every((z2) => {
-						const c1 = zones.get(z1)!
-						const c2 = zones.get(z2)!
-						return c1 > c2
-					}) || a.length === 1
+					return (
+						a.every((z2) => {
+							const c1 = zones.get(z1)!
+							const c2 = zones.get(z2)!
+							return c1 >= c2
+						}) || a.length === 1
+					)
 				})
 				const offsets = [...zones.entries()].map(([name, count]) => {
 					const percent = ((count / total) * 100).toFixed(2)

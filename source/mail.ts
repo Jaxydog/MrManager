@@ -104,8 +104,8 @@ export async function getArchiveInfoEmbed(guild: Guild, archive: Archive, index:
 	const userList = [...new Set(archive.messages.map((m) => `<@${m.user.user_id}>`)).values()].join(", ")
 	const users = `**Users:** ${userList}\n`
 	const messages = `**Messages:** ${archive.messages.length}\n`
-	const created = `**Created:** <@${archive.created_unix}>\n`
-	const archived = `**Archived:** <@${archive.archived_unix}>\n`
+	const created = `**Created:** <t:${archive.created_unix}:f>\n`
+	const archived = `**Archived:** <t:${archive.archived_unix}:f>\n`
 
 	return new EmbedBuilder()
 		.color(defaultColor)
