@@ -55,8 +55,8 @@ export module Text {
 		WelcomeDescription = "...or you can close your ticket with the button below",
 	}
 	export enum Poll {
-		ChoiceCreateTitle = "Created option",
-		ChoiceDeleteTitle = "Deleted option",
+		ChoiceCreateTitle = "Created choice",
+		ChoiceDeleteTitle = "Deleted choice",
 		ClosesField = "Poll Closes",
 		CloseTitle = "Close Poll",
 		CreateTitle = "Created poll",
