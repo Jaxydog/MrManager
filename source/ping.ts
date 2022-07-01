@@ -16,5 +16,6 @@ client.commands
 			fetchReply: true,
 		})) as Message
 		const delay = reply.createdTimestamp - interact.createdTimestamp
+
 		await interact.editReply({ embeds: [embed.title(`Pong! (${delay}ms)`).build()] })
 	})

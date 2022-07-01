@@ -1,5 +1,5 @@
 import { BaseStorage, ButtonBuilder, ComponentBuilder, EmbedBuilder } from "@jaxydog/dibbs"
-import { Guild, MessageAttachment, TextChannel } from "discord.js"
+import { Guild, TextChannel } from "discord.js"
 import { ApplicationCommandOptionTypes, ChannelTypes, MessageButtonStyles } from "discord.js/typings/enums"
 import { Err } from "./common/err"
 import { ID } from "./common/id"
@@ -7,7 +7,6 @@ import { Text } from "./common/text"
 import { defaultColor, fromUnix, getGuild, getMessage, getTextChannel, getUnix } from "./common/util"
 import { getConfig as getAppConfig } from "./apply"
 import { client } from "./main"
-import { RawMessageAttachmentData } from "discord.js/typings/rawDataTypes"
 
 export type Subcommand = "setup" | "view" | "delete"
 

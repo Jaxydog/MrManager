@@ -19,32 +19,35 @@ client.commands
 				name: "wanting",
 				description: "The item or service that you want in return",
 				type: ApplicationCommandOptionTypes.STRING,
+				required: true,
 			},
 			{
 				name: "duration",
 				description: "The amount of time (hours) that this offer will be valid for",
 				type: ApplicationCommandOptionTypes.INTEGER,
+				required: true,
 			},
 		],
 	})
 	.create("offer", async ({ interact }) => {
-		interact.deferReply({})
+		await interact.deferReply({})
 
 		const giving = interact.options.getString("giving", true)
-		const wanting = interact.options.getString("wanting")
-		const duration = interact.options.getInteger("duration") ?? -1
+		const wanting = interact.options.getString("wanting", true)
+		const duration = interact.options.getInteger("duration", true)
 
 		await interact.user.fetch()
 
 		const description = `**Offer ends:** ${
 			duration !== -1 && duration !== 0
-				? `${getUnixIn(duration * 60, interact.createdTimestamp)}`
+				? `<t:${getUnixIn(Math.abs(duration * 60), interact.createdTimestamp)}:R>`
 				: "*Not provided*"
 		}`
 		const embed = new EmbedBuilder()
 			.color(defaultColor)
-			.author(interact.user.tag, interact.user.avatarURL() ?? undefined)
+			.author(interact.user.tag, interact.user.avatarURL() ?? "")
 			.description(description)
+			.thumbnail(interact.user.avatarURL() ?? "")
 			.fields({ name: "Offering", value: giving, inline: true })
 
 		if (wanting) embed.fields({ name: "Wanting", value: wanting, inline: true })

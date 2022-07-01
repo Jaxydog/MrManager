@@ -25,6 +25,7 @@ export enum Err {
 export module Err {
 	export enum Apply {
 		ExpectedPendingStatus = "Application is not pending",
+		FailedAbout = "Error occurred while creating about embed",
 		FailedAccept = "Error occurred while accepting form",
 		FailedDeny = "Error occurred while denying form",
 		FailedOutput = "Error occurred while sending application to moderators",

@@ -1,12 +1,8 @@
 {
 	"ignore": [
-		"./data/apps/*",
-		"./data/mail/*",
-		"./data/poll/*",
-		"./data/role/*",
+		"./data/*",
 		"./logs/*",
 		"./node_modules/*",
-		"./source/*",
-		"./types/*"
+		"./source/*"
 	]
 }

@@ -17,17 +17,7 @@ import { Err } from "./common/err"
 import { ID } from "./common/id"
 import { Text } from "./common/text"
 import { client } from "./main"
-import {
-	defaultColor,
-	getChannel,
-	getGuild,
-	getMember,
-	getMessage,
-	getRole,
-	getTextChannel,
-	getUnix,
-	toUTC,
-} from "./common/util"
+import { defaultColor, getGuild, getMember, getMessage, getRole, getTextChannel, getUnix, toUTC } from "./common/util"
 
 export type Status = "pending" | "accept" | "deny" | "resubmit"
 export type Subcommand = "setup" | "view" | "timezones"
@@ -52,7 +42,7 @@ export interface Entry {
 }
 
 export function getPath(guildId: string) {
-	return `poll/${guildId}`
+	return `apply/${guildId}`
 }
 export async function getConfig(storage: BaseStorage, guildId: string) {
 	const config = await storage.get<Config>(getPath(guildId))
@@ -77,7 +67,12 @@ export function getStatusText(status: Status) {
 	}
 }
 export function getInputEmbed(name: string, desc: string, brand: string) {
-	return new EmbedBuilder().color(defaultColor).title(`Welcome to ${name}`).description(desc).thumbnail(brand).build()
+	return new EmbedBuilder()
+		.color(defaultColor)
+		.title(`Welcome to ${name}`)
+		.description(desc.replace(/\\n/g, "\n"))
+		.thumbnail(brand)
+		.build()
 }
 export function getInputComponent() {
 	const submit = new ButtonBuilder()
@@ -219,13 +214,30 @@ client.buttons
 	.create(ID.Apply.About, async ({ interact }) => {
 		await interact.deferReply({ ephemeral: true })
 
-		const embed = new EmbedBuilder()
-			.color(defaultColor)
-			.title(Text.Apply.AboutTitle)
-			.description(Text.Apply.AboutDesc)
-			.build()
+		try {
+			if (!interact.guild) throw Err.MissingGuild
+			if (!interact.channel) throw Err.MissingChannel
+			if (!interact.channel.isText()) throw Err.MissingTextChannel
 
-		await interact.followUp({ embeds: [embed] })
+			await interact.guild.fetch()
+
+			const embed = new EmbedBuilder()
+				.color(defaultColor)
+				.author(interact.guild.name, interact.guild.iconURL() ?? "")
+				.title(Text.Apply.AboutTitle)
+				.description(Text.Apply.AboutDesc)
+				.build()
+
+			await interact.followUp({ embeds: [embed] })
+		} catch (error) {
+			const embed = new EmbedBuilder()
+				.color(defaultColor)
+				.title(Err.Apply.FailedAbout)
+				.description(`> ${error}`)
+				.build()
+
+			await interact.followUp({ embeds: [embed] })
+		}
 	})
 	.create(ID.Apply.Submit, async ({ interact, storage }) => {
 		try {

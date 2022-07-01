@@ -90,7 +90,7 @@ client.commands
 		const embed = new EmbedBuilder()
 			.author(authorName, authorIcon, authorUrl)
 			.title(title)
-			.description(description)
+			.description(description.replace(/\\n/g, "\n"))
 			.image(image)
 			.thumbnail(thumbnail)
 			.footer(footerText, footerIcon)
