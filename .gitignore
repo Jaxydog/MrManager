@@ -1,8 +1,5 @@
+build
+data
+logs
+node_modules
 .env
-data/apps/
-data/mail/
-data/poll/
-data/role/
-dist/
-logs/
-node_modules/
