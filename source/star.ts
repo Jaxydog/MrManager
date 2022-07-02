@@ -101,7 +101,14 @@ client.commands
 					sent: [],
 				}
 
-				config.entries.push(entry)
+				const index = config.entries.findIndex((e) => e.input_channel_id === entry.input_channel_id)
+
+				if (index !== -1) {
+					config.entries.splice(index, 1, entry)
+				} else {
+					config.entries.push(entry)
+				}
+
 				embed.title(Text.Star.CreateTitle)
 			} else {
 				const input = interact.options.getChannel(ID.Star.Option.Input, true)
@@ -125,7 +132,7 @@ client.commands
 		}
 	})
 
-client.client.on("ready", async (readied) => {
+client.client.on("ready", async () => {
 	await client.storage.actionAll<Config>("star", async (config) => {
 		const guild = await client.client.guilds.fetch(config.guild_id)
 		if (!guild) return
