@@ -17,8 +17,8 @@ export const client = new Client({
 		"GUILDS",
 	],
 	token: process.env["TOKEN"]!,
-	storeLogs: false,
-	updateGlobalCommands: false,
+	storeLogs: true,
+	updateGlobalCommands: true,
 	timerIntervalSeconds: 10,
 })
 

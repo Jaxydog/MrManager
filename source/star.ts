@@ -125,6 +125,20 @@ client.commands
 		}
 	})
 
+client.client.on("ready", async (readied) => {
+	await client.storage.actionAll<Config>("star", async (config) => {
+		const guild = await client.client.guilds.fetch(config.guild_id)
+		if (!guild) return
+
+		for (const entry of config.entries) {
+			const channel = await guild.channels.fetch(entry.input_channel_id, { cache: true, force: true })
+			if (!channel) continue
+			if (!channel.isText()) continue
+
+			await channel.messages.fetch({}, { cache: true, force: true })
+		}
+	})
+})
 client.onEvent("messageReactionAdd", async (reaction, user) => {
 	try {
 		if (!reaction.message.guild) return
