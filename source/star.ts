@@ -125,21 +125,22 @@ client.commands
 		}
 	})
 
-client.client.on("messageReactionAdd", async (reaction, user) => {
-	if (!reaction.message.guild) return
-	if (!reaction.message.channel) return
-	if (!reaction.message.author) return
-	if (reaction.message.author.bot) return
-	if (reaction.message.author.id === user.id) return
-	if (!reaction.message.content && reaction.message.attachments.size === 0) return
-
-	const config = await getConfig(client.storage, reaction.message.guild.id)
-	if (!config.entries.some((e) => e.input_channel_id === reaction.message.channel.id)) return
-
-	const entry = config.entries.find((e) => e.input_channel_id === reaction.message.channel.id)!
-	if (reaction.message.reactions.cache.filter((r) => !r.users.cache.has(user.id)).size < entry.min_stars) return
-
+client.onEvent("messageReactionAdd", async (reaction, user) => {
 	try {
+		if (!reaction.message.guild) return
+		if (!reaction.message.channel) return
+		if (!reaction.message.author) return
+		if (reaction.message.author.bot) return
+		if (reaction.message.author.id === user.id) return
+		if (!reaction.message.content && reaction.message.attachments.size === 0) return
+
+		const config = await getConfig(client.storage, reaction.message.guild.id)
+		if (!config.entries.some((e) => e.input_channel_id === reaction.message.channel.id)) return
+
+		const entry = config.entries.find((e) => e.input_channel_id === reaction.message.channel.id)!
+		if (reaction.message.reactions.cache.filter((r) => !r.users.cache.has(user.id)).size < entry.min_stars) return
+		if (entry.sent.includes(reaction.message.id)) return
+
 		await reaction.message.fetch()
 		let total = 0
 
@@ -160,11 +161,20 @@ client.client.on("messageReactionAdd", async (reaction, user) => {
 		const embed = new EmbedBuilder()
 			.color(reaction.message.author.accentColor ?? defaultColor)
 			.author(reaction.message.author.tag, reaction.message.author.avatarURL() ?? "")
-			.description(`[Original message](${reaction.message.url})\n> ${reaction.message.content ?? ""}`)
+			.description(`[Original message](${reaction.message.url})\n\n> ${reaction.message.content ?? ""}`)
 			.image(reaction.message.attachments.at(0)?.url ?? "")
 			.timestamp(reaction.message.createdAt)
 			.build()
 
 		await output.send({ embeds: [embed] })
-	} catch {}
+		entry.sent.push(reaction.message.id)
+		config.entries.splice(
+			config.entries.findIndex((e) => e.input_channel_id === entry.input_channel_id),
+			1,
+			entry
+		)
+		await client.storage.set(getPath(reaction.message.guild.id), config)
+	} catch (error) {
+		console.log(error)
+	}
 })
