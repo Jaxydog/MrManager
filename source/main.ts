@@ -16,8 +16,8 @@ export const client = new Client({
 		"GUILD_SCHEDULED_EVENTS",
 	],
 	token: process.env["TOKEN"]!,
-	storeLogs: true,
-	updateGlobalCommands: true,
+	storeLogs: false,
+	updateGlobalCommands: false,
 	timerIntervalSeconds: 10,
 })
 
@@ -31,5 +31,6 @@ require("./offer")
 require("./ping")
 require("./poll")
 require("./role")
+require("./star")
 
 client.connect().then(() => client.timer.invoke())

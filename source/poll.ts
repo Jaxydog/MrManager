@@ -7,8 +7,6 @@ import { Text } from "./common/text"
 import { client } from "./main"
 import { defaultColor, getGuild, getMember, getMessage, getTextChannel, getUnix, getUnixIn } from "./common/util"
 
-export type Subcommand = "setup" | "create" | "delete" | "view" | "send" | "close"
-export type ChoiceSubcommand = "create" | "delete"
 export type Choice = [string, string?]
 export type Answer = [string, number]
 
@@ -165,17 +163,17 @@ client.buttons.create(ID.Poll.Choice, async ({ interact, storage, data }) => {
 client.commands
 	.define(ID.Poll.Command, {
 		name: ID.Poll.Command,
-		description: "Manage polls",
+		description: Text.Poll.Command,
 		dm_permission: false,
 		options: [
 			{
-				name: "setup",
-				description: "Set up polls",
+				name: ID.Poll.Subcommand.Setup,
+				description: Text.Poll.Subcommand.Setup,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND,
 				options: [
 					{
-						name: "output_channel",
-						description: "Poll output channel",
+						name: ID.Poll.Option.Output,
+						description: Text.Poll.Option.Output,
 						type: ApplicationCommandOptionTypes.CHANNEL,
 						channel_types: [ChannelTypes.GUILD_TEXT],
 						required: true,
@@ -183,81 +181,81 @@ client.commands
 				],
 			},
 			{
-				name: "create",
-				description: "Create a poll",
+				name: ID.Poll.Subcommand.Create,
+				description: ID.Poll.Subcommand.Create,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND,
 				options: [
 					{
-						name: "title",
-						description: "Poll title",
+						name: ID.Poll.Option.Title,
+						description: Text.Poll.Option.Title,
 						type: ApplicationCommandOptionTypes.STRING,
 						required: true,
 					},
 					{
-						name: "description",
-						description: "Poll description",
+						name: ID.Poll.Option.Description,
+						description: Text.Poll.Option.Description,
 						type: ApplicationCommandOptionTypes.STRING,
 						required: true,
 					},
 					{
-						name: "duration",
-						description: "Poll duration (hours)",
+						name: ID.Poll.Option.Duration,
+						description: Text.Poll.Option.Duration,
 						type: ApplicationCommandOptionTypes.NUMBER,
 						required: true,
 					},
 				],
 			},
 			{
-				name: "delete",
-				description: "Delete a poll",
+				name: ID.Poll.Subcommand.Delete,
+				description: ID.Poll.Subcommand.Delete,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND,
 			},
 			{
-				name: "view",
-				description: "View a poll",
+				name: ID.Poll.Subcommand.View,
+				description: ID.Poll.Subcommand.View,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND,
 			},
 			{
-				name: "send",
-				description: "Send a poll",
+				name: ID.Poll.Subcommand.Send,
+				description: ID.Poll.Subcommand.Send,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND,
 			},
 			{
-				name: "close",
-				description: "Close a poll",
+				name: ID.Poll.Subcommand.Close,
+				description: ID.Poll.Subcommand.Close,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND,
 			},
 			{
-				name: "choice",
-				description: "Manage choices",
+				name: ID.Poll.Subcommand.Choice.Group,
+				description: Text.Poll.Subcommand.Choice.Group,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND_GROUP,
 				options: [
 					{
-						name: "create",
-						description: "Create a choice",
+						name: ID.Poll.Subcommand.Choice.Create,
+						description: Text.Poll.Subcommand.Choice.Create,
 						type: ApplicationCommandOptionTypes.SUB_COMMAND,
 						options: [
 							{
-								name: "title",
-								description: "Choice title",
+								name: ID.Poll.Option.Choice.Title,
+								description: Text.Poll.Option.Choice.Title,
 								type: ApplicationCommandOptionTypes.STRING,
 								required: true,
 							},
 							{
-								name: "emoji",
-								description: "Choice emoji",
+								name: ID.Poll.Option.Choice.Emoji,
+								description: Text.Poll.Option.Choice.Emoji,
 								type: ApplicationCommandOptionTypes.STRING,
 							},
 						],
 					},
 					{
-						name: "delete",
-						description: "Delete a choice",
+						name: ID.Poll.Subcommand.Choice.Delete,
+						description: Text.Poll.Subcommand.Choice.Delete,
 						type: ApplicationCommandOptionTypes.SUB_COMMAND,
 						options: [
 							{
-								name: "title",
-								description: "Choice title",
+								name: ID.Poll.Option.Choice.Title,
+								description: Text.Poll.Option.Choice.Title,
 								type: ApplicationCommandOptionTypes.STRING,
 								required: true,
 							},
@@ -281,20 +279,20 @@ client.commands
 			if (interact.options.getSubcommandGroup(false)) {
 				const config = await getConfig(storage, interact.guild.id)
 				const poll = getPoll(interact.user.id, config)
-				const subcommand = interact.options.getSubcommand(true) as ChoiceSubcommand
+				const subcommand = interact.options.getSubcommand(true) as ID.Poll.Subcommand.Choice
 
-				if (subcommand === "create") {
+				if (subcommand === ID.Poll.Subcommand.Choice.Create) {
 					if (poll.choices.length >= 10) throw Err.Poll.InvalidChoiceCount
 
-					const title = interact.options.getString("title", true)
-					const emoji = interact.options.getString("emoji")
+					const title = interact.options.getString(ID.Poll.Option.Choice.Title, true)
+					const emoji = interact.options.getString(ID.Poll.Option.Choice.Emoji)
 
 					if (poll.choices.some((c) => c[0] === title)) throw Err.Poll.UnexpectedChoice
 
 					poll.choices.push([title, emoji ?? undefined])
 					embed.title(Text.Poll.ChoiceCreateTitle)
 				} else {
-					const title = interact.options.getString("title", true)
+					const title = interact.options.getString(ID.Poll.Option.Choice.Title, true)
 					const index = poll.choices.findIndex(([t]) => t === title)
 					if (index === -1) throw Err.Poll.MissingChoice
 
@@ -306,13 +304,13 @@ client.commands
 				config.polls.splice(index, 1, poll)
 				if (!(await storage.set(path, config))) throw Err.FailedSave
 			} else {
-				const subcommand = interact.options.getSubcommand(true) as Subcommand
+				const subcommand = interact.options.getSubcommand(true) as ID.Poll.Subcommand
 
-				if (subcommand === "setup") {
+				if (subcommand === ID.Poll.Subcommand.Setup) {
 					const member = await getMember(interact.guild, interact.user.id)
 					if (!member.permissions.has("ADMINISTRATOR")) throw Err.InvalidPermissions
 
-					const output = interact.options.getChannel("output_channel", true)
+					const output = interact.options.getChannel(ID.Poll.Option.Output, true)
 					const channel = await getTextChannel(interact.guild, output.id)
 
 					const config: Config = {
@@ -326,12 +324,12 @@ client.commands
 				} else {
 					const config = await getConfig(storage, interact.guild.id)
 
-					if (subcommand === "create") {
+					if (subcommand === ID.Poll.Subcommand.Create) {
 						if (config.polls.some((p) => p.user_id === interact.user.id)) throw Err.Poll.UnexpectedPoll
 
-						const title = interact.options.getString("title", true)
-						const description = interact.options.getString("description", true)
-						const duration = interact.options.getNumber("duration", true)
+						const title = interact.options.getString(ID.Poll.Option.Title, true)
+						const description = interact.options.getString(ID.Poll.Option.Description, true)
+						const duration = interact.options.getNumber(ID.Poll.Option.Duration, true)
 
 						if (title.length > 256) throw Err.InvalidTitleLength
 						if (description.length > 2048) throw Err.Poll.InvalidDescriptionLength
@@ -348,20 +346,20 @@ client.commands
 
 						config.polls.push(poll)
 						embed.title(Text.Poll.CreateTitle)
-					} else if (subcommand === "delete") {
+					} else if (subcommand === ID.Poll.Subcommand.Delete) {
 						const poll = getPoll(interact.user.id, config)
 						if (!!poll.message_id) throw Err.Poll.UnexpectedOutputMessageDelete
 
 						const index = config.polls.findIndex((p) => p.user_id === poll.user_id)
 						config.polls.splice(index, 1)
 						embed.title(Text.Poll.DeleteTitle)
-					} else if (subcommand === "view") {
+					} else if (subcommand === ID.Poll.Subcommand.View) {
 						const embeds = [await getPollEmbed(interact.user, config)]
 						const components = getPollComponent(interact.user.id, config)
 
 						await interact.followUp({ embeds, components })
 						return
-					} else if (subcommand === "send") {
+					} else if (subcommand === ID.Poll.Subcommand.Send) {
 						const poll = getPoll(interact.user.id, config)
 						if (!!poll.message_id) throw Err.Poll.UnexpectedOutputMessageSend
 						if (poll.choices.length <= 1) throw Err.Poll.MissingChoices
@@ -385,7 +383,7 @@ client.commands
 						poll.message_id = message.id
 						config.polls.splice(index, 1, poll)
 						embed.title(Text.Poll.SendTitle)
-					} else if (subcommand === "close") {
+					} else if (subcommand === ID.Poll.Subcommand.Close) {
 						await closePoll(interact.guild, interact.user, config)
 						embed.title(Text.Poll.CloseTitle)
 					}

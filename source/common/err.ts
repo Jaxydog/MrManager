@@ -73,4 +73,8 @@ export module Err {
 		MissingConfig = "Modmail has not been configured",
 		UnexpectedChannel = "There is already an active ModMail channel",
 	}
+	export enum Star {
+		InvalidChannelId = "Star channel does not exist",
+		UnexpectedChannel = "Star channel output cannot be the same as input",
+	}
 }

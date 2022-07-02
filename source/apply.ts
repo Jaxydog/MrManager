@@ -19,9 +19,6 @@ import { Text } from "./common/text"
 import { client } from "./main"
 import { defaultColor, getGuild, getMember, getMessage, getRole, getTextChannel, getUnix, toUTC } from "./common/util"
 
-export type Status = "pending" | "accept" | "deny" | "resubmit"
-export type Subcommand = "setup" | "view" | "timezones"
-
 export interface Config {
 	guild_id: string
 	input_channel_id: string
@@ -35,7 +32,7 @@ export interface Entry {
 	output_message_id: string
 	user_id: string
 	created_unix: number
-	status: Status
+	status: ID.Apply.Status
 	reason?: string
 	offset_utc?: number
 	answers: string[]
@@ -54,7 +51,7 @@ export function getEntry(config: Config, id: string) {
 	if (!entry) throw Err.Apply.MissingResponse
 	return entry
 }
-export function getStatusText(status: Status) {
+export function getStatusText(status: ID.Apply.Status) {
 	switch (status) {
 		case "pending":
 			return Text.Apply.PendingStatus
@@ -141,7 +138,7 @@ export function getEntryComponent(user: User, config: Config) {
 }
 export function getSubmitModal(guild: Guild, user: User, config: Config) {
 	const timezone = new ModalFieldBuilder()
-		.id(ID.Timezone)
+		.id(ID.Apply.Option.Timezone)
 		.style(TextInputStyles.SHORT)
 		.title(Text.TimezoneLabel)
 		.placeholder(toUTC(0))
@@ -170,7 +167,11 @@ export function getSubmitModal(guild: Guild, user: User, config: Config) {
 	return modal.build()
 }
 export function getDenyModal(user: User) {
-	const reason = new ModalFieldBuilder().id(ID.Reason).style(TextInputStyles.SHORT).title(Text.ReasonLabel).build()
+	const reason = new ModalFieldBuilder()
+		.id(ID.Apply.Option.Reason)
+		.style(TextInputStyles.SHORT)
+		.title(Text.ReasonLabel)
+		.build()
 
 	const title = `Deny ${user.tag}`
 
@@ -181,7 +182,11 @@ export function getDenyModal(user: User) {
 		.build()
 }
 export function getResubmitModal(user: User) {
-	const reason = new ModalFieldBuilder().id(ID.Reason).style(TextInputStyles.SHORT).title(Text.ReasonLabel).build()
+	const reason = new ModalFieldBuilder()
+		.id(ID.Apply.Option.Reason)
+		.style(TextInputStyles.SHORT)
+		.title(Text.ReasonLabel)
+		.build()
 
 	const title = `Request resubmit from ${user.tag}`
 
@@ -191,7 +196,7 @@ export function getResubmitModal(user: User) {
 		.field(reason)
 		.build()
 }
-export async function closeEntry(user: User, config: Config, target: Status, reason?: string) {
+export async function closeEntry(user: User, config: Config, target: ID.Apply.Status, reason?: string) {
 	const index = config.entries.findIndex((e) => e.user_id === user.id)
 	if (index === -1) throw Err.Apply.MissingResponse
 
@@ -275,7 +280,7 @@ client.buttons
 			const member = await getMember(interact.guild, userId)
 			const config = await getConfig(storage, interact.guild.id)
 
-			await closeEntry(member.user, config, "accept")
+			await closeEntry(member.user, config, ID.Apply.Status.Accept)
 
 			if (!member.roles.cache.some((r) => r.id === config.accept_role_id)) {
 				const role = await getRole(interact.guild, config.accept_role_id)
@@ -361,11 +366,11 @@ client.modals
 			if (!interact.channel.isText()) throw Err.MissingTextChannel
 
 			const config = await getConfig(storage, interact.guild.id)
-			const utc = interact.fields.getTextInputValue(ID.Timezone) ?? ""
+			const utc = interact.fields.getTextInputValue(ID.Apply.Option.Timezone) ?? ""
 			const entry: Entry = {
 				user_id: interact.user.id,
 				created_unix: getUnix(interact.createdTimestamp),
-				status: "pending",
+				status: ID.Apply.Status.Pending,
 				answers: config.questions.map((_, i) => interact.fields.getTextInputValue(`${i}`)),
 				output_message_id: "",
 				offset_utc: /^UTC([+-][0-9]{1,2})$/i.test(utc) ? +utc.slice(3) : undefined,
@@ -414,7 +419,7 @@ client.modals
 			const member = await getMember(interact.guild, userId)
 			const config = await getConfig(storage, interact.guild.id)
 			const reason = interact.fields.getTextInputValue("reason") ?? "*No reason provided*"
-			await closeEntry(member.user, config, "deny", reason)
+			await closeEntry(member.user, config, ID.Apply.Status.Deny, reason)
 
 			if (!(await storage.set(getPath(interact.guild.id), config))) throw Err.FailedSave
 
@@ -454,8 +459,8 @@ client.modals
 
 			const member = await getMember(interact.guild, userId)
 			const config = await getConfig(storage, interact.guild.id)
-			const reason = interact.fields.getTextInputValue("reason") ?? "*No reason provided*"
-			await closeEntry(member.user, config, "resubmit", reason)
+			const reason = interact.fields.getTextInputValue(ID.Apply.Option.Reason) ?? "*No reason provided*"
+			await closeEntry(member.user, config, ID.Apply.Status.Resubmit, reason)
 
 			if (!(await storage.set(getPath(interact.guild.id), config))) throw Err.FailedSave
 
@@ -485,107 +490,107 @@ client.modals
 client.commands
 	.define(ID.Apply.Command, {
 		name: ID.Apply.Command,
-		description: "Manage guild applications",
+		description: Text.Apply.Command,
 		default_member_permissions: "0",
 		dm_permission: false,
 		options: [
 			{
-				name: "setup",
-				description: "Sets up guild applications",
+				name: ID.Apply.Subcommand.Setup,
+				description: Text.Apply.Subcommand.Setup,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND,
 				options: [
 					{
-						name: "branding_url",
-						description: "Guild branding image URL",
+						name: ID.Apply.Option.Branding,
+						description: Text.Apply.Option.Branding,
 						type: ApplicationCommandOptionTypes.STRING,
 						required: true,
 					},
 					{
-						name: "description",
-						description: "Application embed description",
+						name: ID.Apply.Option.Description,
+						description: Text.Apply.Option.Description,
 						type: ApplicationCommandOptionTypes.STRING,
 						required: true,
 					},
 					{
-						name: "send_forms_to",
-						description: "Text channel to output forms into",
+						name: ID.Apply.Option.FormOutput,
+						description: Text.Apply.Option.FormOutput,
 						type: ApplicationCommandOptionTypes.CHANNEL,
 						channel_types: [ChannelTypes.GUILD_TEXT],
 						required: true,
 					},
 					{
-						name: "accept_role",
-						description: "Role to give to accepted members",
+						name: ID.Apply.Option.AcceptRole,
+						description: Text.Apply.Option.AcceptRole,
 						type: ApplicationCommandOptionTypes.ROLE,
 						required: true,
 					},
 					{
-						name: "question_1",
-						description: "Application form question",
+						name: ID.Apply.Option.Question1,
+						description: Text.Apply.Option.Question,
 						type: ApplicationCommandOptionTypes.STRING,
 						required: true,
 					},
 					{
-						name: "question_2",
-						description: "Application form question",
+						name: ID.Apply.Option.Question2,
+						description: Text.Apply.Option.Question,
 						type: ApplicationCommandOptionTypes.STRING,
 					},
 					{
-						name: "question_3",
-						description: "Application form question",
+						name: ID.Apply.Option.Question3,
+						description: Text.Apply.Option.Question,
 						type: ApplicationCommandOptionTypes.STRING,
 					},
 					{
-						name: "question_4",
-						description: "Application form question",
+						name: ID.Apply.Option.Question4,
+						description: Text.Apply.Option.Question,
 						type: ApplicationCommandOptionTypes.STRING,
 					},
 				],
 			},
 			{
-				name: "view",
-				description: "Displays the specified user's form submission",
+				name: ID.Apply.Subcommand.View,
+				description: Text.Apply.Subcommand.View,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND,
 				options: [
 					{
-						name: "user",
-						description: "Target user",
+						name: ID.Apply.Option.User,
+						description: Text.Apply.Option.User,
 						type: ApplicationCommandOptionTypes.USER,
 						required: true,
 					},
 				],
 			},
 			{
-				name: "timezones",
-				description: "Displays the guild's submitted timezones",
+				name: ID.Apply.Subcommand.Timezones,
+				description: Text.Apply.Subcommand.Timezones,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND,
 			},
 		],
 	})
 	.create(ID.Apply.Command, async ({ interact, storage }) => {
-		try {
-			await interact.deferReply({ ephemeral: true })
+		await interact.deferReply({ ephemeral: true })
 
+		try {
 			if (!interact.guild) throw Err.MissingGuild
 			if (!interact.channel) throw Err.MissingChannel
 			if (!interact.channel.isText()) throw Err.MissingTextChannel
 
-			const subcommand = interact.options.getSubcommand(true) as Subcommand
+			const subcommand = interact.options.getSubcommand(true) as ID.Apply.Subcommand
 
-			if (subcommand === "setup") {
-				const description = interact.options.getString("description", true)
+			if (subcommand === ID.Apply.Subcommand.Setup) {
+				const description = interact.options.getString(ID.Apply.Option.Description, true)
 				if (description.length > 4096) throw Err.InvalidDescriptionLength
 
-				const outputId = interact.options.getChannel("send_forms_to", true).id
+				const outputId = interact.options.getChannel(ID.Apply.Option.FormOutput, true).id
 				await getTextChannel(interact.guild, outputId)
 
-				const q1 = interact.options.getString("question_1", true)
+				const q1 = interact.options.getString(ID.Apply.Option.Question1, true)
 				if (q1.length > 45) throw Err.InvalidLabelLength
-				const q2 = interact.options.getString("question_2")
+				const q2 = interact.options.getString(ID.Apply.Option.Question2)
 				if (q2 && q2.length > 45) throw Err.InvalidLabelLength
-				const q3 = interact.options.getString("question_3")
+				const q3 = interact.options.getString(ID.Apply.Option.Question3)
 				if (q3 && q3.length > 45) throw Err.InvalidLabelLength
-				const q4 = interact.options.getString("question_4")
+				const q4 = interact.options.getString(ID.Apply.Option.Question4)
 				if (q4 && q4.length > 45) throw Err.InvalidLabelLength
 
 				const old = await storage.get<Config>(getPath(interact.guild.id))
@@ -597,7 +602,7 @@ client.commands
 					if (message && message.deletable) await message.delete()
 				}
 
-				const brand = interact.options.getString("branding_url", true)
+				const brand = interact.options.getString(ID.Apply.Option.Branding, true)
 				const embeds = [getInputEmbed(interact.guild.name, description, brand)]
 				const components = getInputComponent()
 				const message = await interact.channel.send({ embeds, components })
@@ -607,7 +612,7 @@ client.commands
 					input_channel_id: message.channel.id,
 					input_message_id: message.id,
 					output_channel_id: outputId,
-					accept_role_id: interact.options.getRole("accept_role", true).id,
+					accept_role_id: interact.options.getRole(ID.Apply.Option.AcceptRole, true).id,
 					questions: [q1, q2, q3, q4].filter((q) => !!q) as string[],
 					entries: [],
 				}
@@ -621,8 +626,8 @@ client.commands
 
 			const config = await getConfig(storage, interact.guild.id)
 
-			if (subcommand === "view") {
-				const user = interact.options.getUser("user", true)
+			if (subcommand === ID.Apply.Subcommand.View) {
+				const user = interact.options.getUser(ID.Apply.Option.User, true)
 				const index = config.entries.findIndex((e) => e.user_id === user.id)
 				const embeds = [await getEntryEmbed(user, config)]
 				const components = getEntryComponent(user, config)
@@ -633,9 +638,7 @@ client.commands
 				if (!(await storage.set(getPath(interact.guild.id), config))) throw Err.FailedSave
 				const embed = new EmbedBuilder().color(defaultColor).title(Text.Apply.ViewTitle).build()
 				await interact.followUp({ embeds: [embed] })
-				return
-			}
-			if (subcommand === "timezones") {
+			} else if (subcommand === ID.Apply.Subcommand.Timezones) {
 				const total = config.entries.filter((e) => !!e.offset_utc).length
 				if (total === 0) throw Err.Apply.MissingTimezones
 
@@ -672,7 +675,6 @@ client.commands
 					.build()
 
 				await interact.followUp({ embeds: [embed] })
-				return
 			}
 		} catch (error) {
 			const embed = new EmbedBuilder()

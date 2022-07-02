@@ -2,55 +2,68 @@ import { EmbedBuilder } from "@jaxydog/dibbs"
 import { ApplicationCommandOptionTypes } from "discord.js/typings/enums"
 import { client } from "./main"
 import { defaultColor, getUnixIn } from "./common/util"
+import { ID } from "./common/id"
+import { Text } from "./common/text"
+import { Err } from "./common/err"
 
 client.commands
-	.define("offer", {
-		name: "offer",
-		description: "Posts a trade / service offer",
+	.define(ID.Offer.Command, {
+		name: ID.Offer.Command,
+		description: Text.Offer.Command,
 		dm_permission: false,
 		options: [
 			{
-				name: "giving",
-				description: "The item or service that you are offering",
+				name: ID.Offer.Option.Giving,
+				description: Text.Offer.Option.Giving,
 				type: ApplicationCommandOptionTypes.STRING,
 				required: true,
 			},
 			{
-				name: "wanting",
-				description: "The item or service that you want in return",
+				name: ID.Offer.Option.Wanting,
+				description: Text.Offer.Option.Wanting,
 				type: ApplicationCommandOptionTypes.STRING,
 				required: true,
 			},
 			{
-				name: "duration",
-				description: "The amount of time (hours) that this offer will be valid for",
+				name: ID.Offer.Option.Duration,
+				description: Text.Offer.Option.Duration,
 				type: ApplicationCommandOptionTypes.INTEGER,
 				required: true,
 			},
 		],
 	})
-	.create("offer", async ({ interact }) => {
+	.create(ID.Offer.Command, async ({ interact }) => {
 		await interact.deferReply({})
 
-		const giving = interact.options.getString("giving", true)
-		const wanting = interact.options.getString("wanting", true)
-		const duration = interact.options.getInteger("duration", true)
+		try {
+			await interact.user.fetch()
 
-		await interact.user.fetch()
+			const giving = interact.options.getString(ID.Offer.Option.Giving, true)
+			const wanting = interact.options.getString(ID.Offer.Option.Wanting, true)
+			const duration = interact.options.getInteger(ID.Offer.Option.Duration, true)
 
-		const description = `**Offer ends:** ${
-			duration !== -1 && duration !== 0
-				? `<t:${getUnixIn(Math.abs(duration * 60), interact.createdTimestamp)}:R>`
-				: "*Not provided*"
-		}`
-		const embed = new EmbedBuilder()
-			.color(defaultColor)
-			.author(interact.user.tag, interact.user.avatarURL() ?? "")
-			.description(description)
-			.thumbnail(interact.user.avatarURL() ?? "")
-			.fields({ name: "Offering", value: giving, inline: true })
+			const description = `**Offer ends:** ${
+				duration !== -1 && duration !== 0
+					? `<t:${getUnixIn(Math.abs(duration * 60), interact.createdTimestamp)}:R>`
+					: "*Not provided*"
+			}`
+			const embed = new EmbedBuilder()
+				.color(defaultColor)
+				.author(interact.user.tag, interact.user.avatarURL() ?? "")
+				.description(description)
+				.thumbnail(interact.user.avatarURL() ?? "")
+				.fields({ name: Text.Offer.OfferingName, value: giving, inline: true })
+				.fields({ name: Text.Offer.WantingName, value: wanting, inline: true })
+				.build()
 
-		if (wanting) embed.fields({ name: "Wanting", value: wanting, inline: true })
+			await interact.followUp({ embeds: [embed] })
+		} catch (error) {
+			const embed = new EmbedBuilder()
+				.color(defaultColor)
+				.title(Err.FailedExecute)
+				.description(`> ${error}`)
+				.build()
 
-		await interact.followUp({ embeds: [embed.build()] })
+			await interact.followUp({ embeds: [embed] })
+		}
 	})

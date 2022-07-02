@@ -1,13 +1,11 @@
 import { BaseStorage, ButtonBuilder, ComponentBuilder, EmbedBuilder } from "@jaxydog/dibbs"
 import { Guild } from "discord.js"
-import { ApplicationCommandOptionTypes, ChannelTypes, MessageButtonStyles } from "discord.js/typings/enums"
+import { ApplicationCommandOptionTypes, MessageButtonStyles } from "discord.js/typings/enums"
 import { Err } from "./common/err"
 import { ID } from "./common/id"
 import { Text } from "./common/text"
 import { defaultColor, getMember, getRole } from "./common/util"
 import { client } from "./main"
-
-export type Subcommand = "create" | "delete" | "view" | "send"
 
 export interface Config {
 	user_id: string
@@ -76,54 +74,54 @@ client.buttons.create(ID.Role.Selector, async ({ interact, data }) => {
 client.commands
 	.define(ID.Role.Command, {
 		name: ID.Role.Command,
-		description: "Manage role selectors",
+		description: Text.Role.Command,
 		dm_permission: false,
 		default_member_permissions: "0",
 		options: [
 			{
-				name: "create",
-				description: "Create a selector",
+				name: ID.Role.Subcommand.Create,
+				description: Text.Role.Subcommand.Create,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND,
 				options: [
 					{
-						name: "role",
-						description: "Selector role",
+						name: ID.Role.Options.Role,
+						description: Text.Role.Options.Role,
 						type: ApplicationCommandOptionTypes.ROLE,
 						required: true,
 					},
 					{
-						name: "emoji",
-						description: "Selector emoji",
+						name: ID.Role.Options.Emoji,
+						description: Text.Role.Options.Emoji,
 						type: ApplicationCommandOptionTypes.STRING,
 					},
 				],
 			},
 			{
-				name: "delete",
-				description: "Delete a selector",
+				name: ID.Role.Subcommand.Delete,
+				description: Text.Role.Subcommand.Delete,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND,
 				options: [
 					{
-						name: "role",
-						description: "Selector role",
+						name: ID.Role.Options.Role,
+						description: Text.Role.Options.Role,
 						type: ApplicationCommandOptionTypes.ROLE,
 						required: true,
 					},
 				],
 			},
 			{
-				name: "view",
-				description: "View selectors",
+				name: ID.Role.Subcommand.View,
+				description: Text.Role.Subcommand.View,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND,
 			},
 			{
-				name: "send",
-				description: "Post selectors",
+				name: ID.Role.Subcommand.Send,
+				description: Text.Role.Subcommand.Send,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND,
 				options: [
 					{
-						name: "title",
-						description: "Embed title",
+						name: ID.Role.Options.Title,
+						description: Text.Role.Options.Title,
 						type: ApplicationCommandOptionTypes.STRING,
 						required: true,
 					},
@@ -140,13 +138,13 @@ client.commands
 			if (!interact.channel.isText()) throw Err.MissingTextChannel
 
 			const config = await getConfig(storage, interact.guild.id, interact.user.id)
-			const subcommand = interact.options.getSubcommand(true) as Subcommand
+			const subcommand = interact.options.getSubcommand(true) as ID.Role.Subcommand
 			const embed = new EmbedBuilder().color(defaultColor)
 			const path = getPath(interact.guild.id, interact.user.id)
 
-			if (subcommand === "create") {
-				const role = interact.options.getRole("role", true)
-				const emoji = interact.options.getString("emoji")
+			if (subcommand === ID.Role.Subcommand.Create) {
+				const role = interact.options.getRole(ID.Role.Options.Role, true)
+				const emoji = interact.options.getString(ID.Role.Options.Emoji)
 
 				if (config.roles.some((r) => r.role_id === role.id)) throw Err.Role.UnexpectedRole
 
@@ -154,8 +152,8 @@ client.commands
 
 				if (!(await storage.set(path, config))) throw Err.FailedSave
 				embed.title(Text.Role.CreateTitle)
-			} else if (subcommand === "delete") {
-				const role = interact.options.getRole("role", true)
+			} else if (subcommand === ID.Role.Subcommand.Delete) {
+				const role = interact.options.getRole(ID.Role.Options.Role, true)
 				const index = config.roles.findIndex((r) => r.role_id === role.id)
 
 				if (index === -1) throw Err.Role.MissingRole
@@ -164,7 +162,7 @@ client.commands
 
 				if (!(await storage.set(path, config))) throw Err.FailedSave
 				embed.title(Text.Role.DeleteTitle)
-			} else if (subcommand === "view") {
+			} else if (subcommand === ID.Role.Subcommand.View) {
 				const embeds = [new EmbedBuilder().color(defaultColor).title(Text.Role.ViewTitle).build()]
 				const components = await getRoleComponent(interact.guild, config)
 
@@ -172,8 +170,8 @@ client.commands
 
 				await interact.followUp({ embeds, components })
 				return
-			} else if (subcommand === "send") {
-				const title = interact.options.getString("title", true)
+			} else if (subcommand === ID.Role.Subcommand.Send) {
+				const title = interact.options.getString(ID.Role.Options.Title, true)
 				if (title.length > 256) throw Err.InvalidTitleLength
 
 				const embeds = [new EmbedBuilder().color(defaultColor).title(title).build()]

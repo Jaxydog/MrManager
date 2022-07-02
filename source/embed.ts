@@ -3,89 +3,91 @@ import { ApplicationCommandOptionTypes } from "discord.js/typings/enums"
 import { Err } from "./common/err"
 import { client } from "./main"
 import { defaultColor } from "./common/util"
+import { ID } from "./common/id"
+import { Text } from "./common/text"
 
 client.commands
-	.define("embed", {
-		name: "embed",
-		description: "Create a rich embed",
+	.define(ID.Embed.Command, {
+		name: ID.Embed.Command,
+		description: Text.Embed.Command,
 		default_member_permissions: "0",
 		dm_permission: false,
 		options: [
 			{
-				name: "author_name",
-				description: "Embed author name (text)",
+				name: ID.Embed.Options.AuthorIcon,
+				description: Text.Embed.Options.AuthorIcon,
 				type: ApplicationCommandOptionTypes.STRING,
 			},
 			{
-				name: "author_icon",
-				description: "Embed author icon (URL)",
+				name: ID.Embed.Options.AuthorName,
+				description: Text.Embed.Options.AuthorName,
 				type: ApplicationCommandOptionTypes.STRING,
 			},
 			{
-				name: "author_url",
-				description: "Embed author URL (URL)",
+				name: ID.Embed.Options.AuthorUrl,
+				description: Text.Embed.Options.AuthorUrl,
 				type: ApplicationCommandOptionTypes.STRING,
 			},
 			{
-				name: "title",
-				description: "Embed title (text)",
-				type: ApplicationCommandOptionTypes.STRING,
-			},
-			{
-				name: "description",
-				description: "Embed description (text / markdown)",
-				type: ApplicationCommandOptionTypes.STRING,
-			},
-			{
-				name: "image",
-				description: "Embed image (URL)",
-				type: ApplicationCommandOptionTypes.STRING,
-			},
-			{
-				name: "thumbnail",
-				description: "Embed thumbnail (URL)",
-				type: ApplicationCommandOptionTypes.STRING,
-			},
-			{
-				name: "footer_text",
-				description: "Embed footer text (text)",
-				type: ApplicationCommandOptionTypes.STRING,
-			},
-			{
-				name: "footer_icon",
-				description: "Embed footer icon (URL)",
-				type: ApplicationCommandOptionTypes.STRING,
-			},
-			{
-				name: "color",
-				description: "Embed color (hex)",
+				name: ID.Embed.Options.Color,
+				description: Text.Embed.Options.Color,
 				type: ApplicationCommandOptionTypes.INTEGER,
 			},
 			{
-				name: "url",
-				description: "Embed url (URL)",
+				name: ID.Embed.Options.Description,
+				description: Text.Embed.Options.Description,
 				type: ApplicationCommandOptionTypes.STRING,
 			},
 			{
-				name: "preview",
-				description: "Whether to view a preview of the embed",
+				name: ID.Embed.Options.FooterIcon,
+				description: Text.Embed.Options.FooterIcon,
+				type: ApplicationCommandOptionTypes.STRING,
+			},
+			{
+				name: ID.Embed.Options.FooterText,
+				description: Text.Embed.Options.FooterText,
+				type: ApplicationCommandOptionTypes.STRING,
+			},
+			{
+				name: ID.Embed.Options.Image,
+				description: Text.Embed.Options.Image,
+				type: ApplicationCommandOptionTypes.STRING,
+			},
+			{
+				name: ID.Embed.Options.Preview,
+				description: Text.Embed.Options.Preview,
 				type: ApplicationCommandOptionTypes.BOOLEAN,
+			},
+			{
+				name: ID.Embed.Options.Thumbnail,
+				description: Text.Embed.Options.Thumbnail,
+				type: ApplicationCommandOptionTypes.STRING,
+			},
+			{
+				name: ID.Embed.Options.Title,
+				description: Text.Embed.Options.Title,
+				type: ApplicationCommandOptionTypes.STRING,
+			},
+			{
+				name: ID.Embed.Options.Url,
+				description: Text.Embed.Options.Url,
+				type: ApplicationCommandOptionTypes.STRING,
 			},
 		],
 	})
-	.create("embed", async ({ interact }) => {
-		const authorName = interact.options.getString("author_name") ?? ""
-		const authorIcon = interact.options.getString("author_icon") ?? ""
-		const authorUrl = interact.options.getString("author_url") ?? ""
-		const title = interact.options.getString("title") ?? ""
-		const description = interact.options.getString("description") ?? ""
-		const image = interact.options.getString("image") ?? ""
-		const thumbnail = interact.options.getString("thumbnail") ?? ""
-		const footerText = interact.options.getString("footer_text") ?? ""
-		const footerIcon = interact.options.getString("footer_icon") ?? ""
-		const color_ = interact.options.getInteger("color") ?? defaultColor
-		const url = interact.options.getString("url") ?? ""
-		const preview = interact.options.getBoolean("preview") ?? false
+	.create(ID.Embed.Command, async ({ interact }) => {
+		const authorIcon = interact.options.getString(ID.Embed.Options.AuthorIcon) ?? ""
+		const authorName = interact.options.getString(ID.Embed.Options.AuthorName) ?? ""
+		const authorUrl = interact.options.getString(ID.Embed.Options.AuthorUrl) ?? ""
+		const color_ = interact.options.getInteger(ID.Embed.Options.Color) ?? defaultColor
+		const description = interact.options.getString(ID.Embed.Options.Description) ?? ""
+		const footerIcon = interact.options.getString(ID.Embed.Options.FooterIcon) ?? ""
+		const footerText = interact.options.getString(ID.Embed.Options.FooterText) ?? ""
+		const image = interact.options.getString(ID.Embed.Options.Image) ?? ""
+		const preview = interact.options.getBoolean(ID.Embed.Options.Preview) ?? false
+		const thumbnail = interact.options.getString(ID.Embed.Options.Thumbnail) ?? ""
+		const title = interact.options.getString(ID.Embed.Options.Title) ?? ""
+		const url = interact.options.getString(ID.Embed.Options.Url) ?? ""
 
 		const embed = new EmbedBuilder()
 			.author(authorName, authorIcon, authorUrl)

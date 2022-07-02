@@ -8,8 +8,6 @@ import { defaultColor, fromUnix, getGuild, getMessage, getTextChannel, getUnix }
 import { getConfig as getAppConfig } from "./apply"
 import { client } from "./main"
 
-export type Subcommand = "setup" | "view" | "delete"
-
 export interface Config {
 	guild_id: string
 	channel_id: string
@@ -267,7 +265,7 @@ client.buttons
 			try {
 				const config = await getAppConfig(storage, interact.guild.id)
 				const response = config.entries.find((e) => e.user_id === interact.user.id)
-				if (response) accepted &&= response.status === "accept"
+				if (response) accepted &&= response.status === ID.Apply.Status.Accept
 			} catch {}
 			if (!accepted) throw Err.Mail.InvalidStatus
 
@@ -419,25 +417,25 @@ client.buttons
 client.commands
 	.define(ID.Mail.Command, {
 		name: ID.Mail.Command,
-		description: "Manage ModMail",
+		description: Text.Mail.Command,
 		default_member_permissions: "0",
 		dm_permission: false,
 		options: [
 			{
-				name: "setup",
-				description: "Set up ModMail",
+				name: ID.Mail.Subcommand.Setup,
+				description: Text.Mail.Subcommand.Setup,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND,
 				options: [
 					{
-						name: "category",
-						description: "Category to create ModMail channels under",
+						name: ID.Mail.Option.Category,
+						description: Text.Mail.Option.Category,
 						type: ApplicationCommandOptionTypes.CHANNEL,
 						channel_types: [ChannelTypes.GUILD_CATEGORY],
 						required: true,
 					},
 					{
-						name: "afk_timeout",
-						description: "Duration in minutes before a ModMail channel is closed due to inactivity",
+						name: ID.Mail.Option.Timeout,
+						description: Text.Mail.Option.Timeout,
 						type: ApplicationCommandOptionTypes.INTEGER,
 						min_value: 0,
 						required: true,
@@ -445,25 +443,25 @@ client.commands
 				],
 			},
 			{
-				name: "view",
-				description: "View an archived channel",
+				name: ID.Mail.Subcommand.View,
+				description: Text.Mail.Subcommand.View,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND,
 				options: [
 					{
-						name: "id",
-						description: "Archive identifier",
+						name: ID.Mail.Option.Id,
+						description: Text.Mail.Option.Id,
 						type: ApplicationCommandOptionTypes.STRING,
 					},
 				],
 			},
 			{
-				name: "delete",
-				description: "Delete an archived channel",
+				name: ID.Mail.Subcommand.Delete,
+				description: Text.Mail.Subcommand.Delete,
 				type: ApplicationCommandOptionTypes.SUB_COMMAND,
 				options: [
 					{
-						name: "id",
-						description: "Archive identifier",
+						name: ID.Mail.Option.Id,
+						description: Text.Mail.Option.Id,
 						type: ApplicationCommandOptionTypes.STRING,
 						required: true,
 					},
@@ -472,8 +470,8 @@ client.commands
 		],
 	})
 	.create(ID.Mail.Command, async ({ interact, storage }) => {
-		const subcommand = interact.options.getSubcommand(true) as Subcommand
-		await interact.deferReply({ ephemeral: subcommand !== "view" })
+		const subcommand = interact.options.getSubcommand(true) as ID.Mail.Subcommand
+		await interact.deferReply({ ephemeral: subcommand !== ID.Mail.Subcommand.View })
 
 		try {
 			if (!interact.guild) throw Err.MissingGuild
@@ -482,9 +480,9 @@ client.commands
 
 			const embed = new EmbedBuilder().color(defaultColor)
 
-			if (subcommand === "setup") {
-				const timeout = interact.options.getInteger("afk_timeout", true)
-				const category = interact.options.getChannel("category", true)
+			if (subcommand === ID.Mail.Subcommand.Setup) {
+				const timeout = interact.options.getInteger(ID.Mail.Option.Timeout, true)
+				const category = interact.options.getChannel(ID.Mail.Option.Category, true)
 				if (category.type !== "GUILD_CATEGORY") throw Err.Mail.InvalidCategory
 
 				try {
@@ -509,8 +507,8 @@ client.commands
 
 				if (!(await storage.set(getPath(interact.guild.id), config))) throw Err.FailedSave
 				embed.title(Text.Mail.SetupTitle)
-			} else if (subcommand === "view") {
-				const id = interact.options.getString("id", false)
+			} else if (subcommand === ID.Mail.Subcommand.View) {
+				const id = interact.options.getString(ID.Mail.Option.Id, false)
 
 				const path = getArchivePath(interact.guild.id, "")
 				const dir = await storage.dir(path)
@@ -524,8 +522,8 @@ client.commands
 
 				await interact.followUp({ embeds, components })
 				return
-			} else if (subcommand === "delete") {
-				const id = interact.options.getString("id", true)
+			} else if (subcommand === ID.Mail.Subcommand.Delete) {
+				const id = interact.options.getString(ID.Mail.Option.Id, true)
 				if (!(await storage.del(getArchivePath(interact.guild.id, id)))) throw Err.Mail.MissingArchive
 				embed.title(Text.Mail.DeleteTitle)
 			}
