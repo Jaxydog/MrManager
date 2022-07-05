@@ -169,12 +169,12 @@ client.onEvent("messageReactionAdd", async (reaction, user) => {
 		for (const react of reaction.message.reactions.cache.values()) {
 			await react.fetch()
 
-			const filtered = react.users.cache.filter((u) => voted.has(u.id))
+			const filtered = react.users.cache.filter((u) => !voted.has(u.id))
 			const mod = filtered.has(reaction.message.author.id) ? -1 : 0
 
 			total += filtered.size + mod
 
-			for (const user of react.users.cache.values()) {
+			for (const user of filtered.values()) {
 				voted.add(user.id)
 			}
 		}
