@@ -163,12 +163,20 @@ client.onEvent("messageReactionAdd", async (reaction, user) => {
 		if (entry.sent.includes(reaction.message.id)) return
 
 		await reaction.message.fetch()
+		const voted = new Set<string>()
 		let total = 0
 
 		for (const react of reaction.message.reactions.cache.values()) {
 			await react.fetch()
-			const mod = react.users.cache.has(reaction.message.author.id) ? -1 : 0
-			total += react.count + mod
+
+			const filtered = react.users.cache.filter((u) => voted.has(u.id))
+			const mod = filtered.has(reaction.message.author.id) ? -1 : 0
+
+			total += filtered.size + mod
+
+			for (const user of react.users.cache.values()) {
+				voted.add(user.id)
+			}
 		}
 
 		if (total < entry.min_stars) return
