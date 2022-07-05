@@ -187,10 +187,13 @@ client.onEvent("messageReactionAdd", async (reaction, user) => {
 
 		await reaction.message.author.fetch()
 
+		const link = `[🔗 Original Message](${reaction.message.url})`
+		const content = reaction.message.content ? `\n\n${reaction.message.content}` : ""
+
 		const embed = new EmbedBuilder()
 			.color(reaction.message.author.accentColor ?? defaultColor)
 			.author(reaction.message.author.tag, reaction.message.author.avatarURL() ?? "")
-			.description(`[Original message](${reaction.message.url})\n\n> ${reaction.message.content ?? ""}`)
+			.description(`${link}${content}`)
 			.image(reaction.message.attachments.at(0)?.url ?? "")
 			.timestamp(reaction.message.createdAt)
 			.build()
