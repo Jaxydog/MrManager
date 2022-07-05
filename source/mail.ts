@@ -68,7 +68,7 @@ export async function storeChannel(storage: BaseStorage, channel: TextChannel) {
 			messages: [],
 		}
 
-		for (const [, message] of messages) {
+		for (const message of [...messages.values()].slice(1)) {
 			archive.messages.push({
 				user: {
 					user_id: message.author.id,
