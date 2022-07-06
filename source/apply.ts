@@ -367,13 +367,14 @@ client.modals
 
 			const config = await getConfig(storage, interact.guild.id)
 			const utc = interact.fields.getTextInputValue(ID.Apply.Option.Timezone) ?? ""
+			const offset = /^UTC([+-][0-9]{1,2})$/i.test(utc) ? +utc.slice(3) : undefined
 			const entry: Entry = {
 				user_id: interact.user.id,
 				created_unix: getUnix(interact.createdTimestamp),
 				status: ID.Apply.Status.Pending,
 				answers: config.questions.map((_, i) => interact.fields.getTextInputValue(`${i}`)),
 				output_message_id: "",
-				offset_utc: /^UTC([+-][0-9]{1,2})$/i.test(utc) ? +utc.slice(3) : undefined,
+				offset_utc: offset && offset >= -12 && offset <= 14 ? offset : undefined,
 			}
 
 			if (config.entries.some((e) => e.user_id === entry.user_id)) {
