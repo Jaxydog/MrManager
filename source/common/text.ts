@@ -2,7 +2,7 @@ export enum Text {
 	AboutEmoji = "ℹ️",
 	AboutLabel = "About",
 	ReasonLabel = "Reason",
-	TimezoneLabel = "Timezone (UTC)",
+	TimezoneLabel = "Your timezone (UTC format)",
 }
 export module Text {
 	export enum Apply {
