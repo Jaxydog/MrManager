@@ -140,7 +140,7 @@ client.buttons.create(ID.Poll.Choice, async ({ interact, storage, data }) => {
 		const poll = getPostedPoll(userId, config)
 		if (poll.closes_unix <= getUnix()) throw Err.Poll.UnexpectedResponseClosed
 		if (poll.answers.some(([id]) => id === interact.user.id)) throw Err.Poll.UnexpectedResponse
-		poll.answers.push([userId, index])
+		poll.answers.push([interact.user.id, index])
 
 		const pollIndex = config.polls.findIndex((p) => p.user_id === poll.user_id)
 		config.polls.splice(pollIndex, 1, poll)
